@@ -1,0 +1,290 @@
+x-prod-env: &prod-env
+  - path: .env.prod
+    required: false
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-api-env: &api-env
+  DJANGO_SETTINGS_MODULE: crm.config.settings.prod
+  APP_ENV: production
+  DATABASE_URL: postgres://${POSTGRES_USER:?Set POSTGRES_USER in .env.prod}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env.prod}
+  REDIS_URL: redis://redis:6379/0
+  CACHE_URL: redis://redis:6379/1
+  CELERY_BROKER_URL: redis://redis:6379/0
+  CELERY_RESULT_BACKEND: redis://redis:6379/0
+  MEDIA_PRIVATE_ROOT: /app/apps/api/private_media
+  WA_BRIDGE_URL: http://wa-bridge:3001
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.prod}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+    mem_limit: 1g
+
+  redis:
+    image: redis:7.4.2-alpine
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--maxmemory",
+        "${REDIS_MAXMEMORY:-256mb}",
+        "--maxmemory-policy",
+        "allkeys-lru",
+      ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+    mem_limit: 384m
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: production
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    env_file: *prod-env
+    environment:
+      <<: *api-env
+      SERVICE_NAME: api
+    command:
+      - sh
+      - -c
+      - >-
+        /app/infra/docker/api-entrypoint.sh gunicorn crm.config.wsgi:application
+        --bind 0.0.0.0:8000
+        --worker-class gthread
+        --workers $${GUNICORN_WORKERS:-2}
+        --threads $${GUNICORN_THREADS:-4}
+        --timeout $${GUNICORN_TIMEOUT:-60}
+        --access-logfile -
+        --error-logfile -
+    volumes:
+      - static-data:/app/apps/api/staticfiles
+      - media-private:/app/apps/api/private_media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/health/ready/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    logging: *default-logging
+    mem_limit: 1g
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: production
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    env_file: *prod-env
+    environment:
+      <<: *api-env
+      SERVICE_NAME: worker
+    command:
+      - sh
+      - -c
+      - >-
+        celery -A crm.config worker --loglevel=$${CELERY_LOG_LEVEL:-INFO}
+        -Q celery,ai_fast,ai_slow,transcription,image_generation,embeddings,evals,operations,notifications,automations,analytics,monitoring
+        --concurrency=$${CELERY_WORKER_CONCURRENCY:-2}
+    volumes:
+      - media-private:/app/apps/api/private_media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A crm.config inspect ping -t 5 >/dev/null || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    logging: *default-logging
+    mem_limit: 1g
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: production
+    restart: unless-stopped
+    working_dir: /app/apps/api
+    env_file: *prod-env
+    environment:
+      <<: *api-env
+      SERVICE_NAME: scheduler
+    command:
+      - sh
+      - -c
+      - >-
+        celery -A crm.config beat --loglevel=$${CELERY_LOG_LEVEL:-INFO}
+        --schedule /tmp/celerybeat-schedule
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A crm.config report >/dev/null || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    logging: *default-logging
+    mem_limit: 512m
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      target: production
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:?Set NEXT_PUBLIC_API_BASE_URL in .env.prod}
+    restart: unless-stopped
+    env_file: *prod-env
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:?Set NEXT_PUBLIC_API_BASE_URL in .env.prod}
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging: *default-logging
+    mem_limit: 768m
+
+  wa-bridge:
+    build:
+      context: .
+      dockerfile: infra/docker/wa-bridge.Dockerfile
+    restart: unless-stopped
+    env_file: *prod-env
+    environment:
+      BACKEND_URL: http://api:8000
+      ORGANIZATION_ID: ${ORGANIZATION_ID:?Set ORGANIZATION_ID in .env.prod}
+      WA_BRIDGE_SHARED_SECRET: ${WA_BRIDGE_SHARED_SECRET:?Set WA_BRIDGE_SHARED_SECRET in .env.prod}
+    volumes:
+      - wa-bridge-auth:/app/apps/wa-bridge/.wwebjs_auth
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"process.exit(0)\""]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging: *default-logging
+    mem_limit: 1g
+
+  backup:
+    build:
+      context: .
+      dockerfile: infra/docker/backup.Dockerfile
+    restart: unless-stopped
+    env_file: *prod-env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:?Set POSTGRES_USER in .env.prod}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env.prod}
+      BACKUP_DIR: /backups
+    command:
+      - sh
+      - -c
+      - >-
+        while true; do
+          /scripts/postgres-backup.sh;
+          sleep $${BACKUP_INTERVAL_SECONDS:-86400};
+        done
+    volumes:
+      - postgres-backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -w /backups || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging: *default-logging
+    mem_limit: 256m
+
+  caddy:
+    image: caddy:2.8.4-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env.prod}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env.prod}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging: *default-logging
+    mem_limit: 256m
+
+volumes:
+  postgres-data:
+  redis-data:
+  static-data:
+  media-private:
+  wa-bridge-auth:
+  postgres-backups:
+  caddy-data:
+  caddy-config:

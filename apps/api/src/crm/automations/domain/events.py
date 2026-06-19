@@ -1,0 +1,5 @@
+AUTOMATION_TRIGGER_DISPATCHED = "automation.trigger_dispatched.v1"
+AUTOMATION_RUN_STARTED = "automation.run_started.v1"
+AUTOMATION_RUN_FINISHED = "automation.run_finished.v1"
+AUTOMATION_ACTION_EXECUTED = "automation.action_executed.v1"
+AUTOMATION_ACTION_BLOCKED = "automation.action_blocked.v1"

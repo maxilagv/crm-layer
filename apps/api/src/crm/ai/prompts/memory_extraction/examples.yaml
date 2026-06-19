@@ -1,0 +1,19 @@
+# Casos de referencia para la extracción de memoria.
+
+- name: compromiso_y_objecion
+  input: "El cliente pidió la propuesta para el viernes y dijo que le preocupa el precio."
+  expected:
+    facts_count: 2
+  note: "Un commitment con fecha (importance alta) y una objection de precio."
+
+- name: preferencia
+  input: "Me dijo que prefiere que le escriba temprano, antes de las 10."
+  expected:
+    facts_count: 1
+  note: "Una preference permanente (expires_in_days null)."
+
+- name: nada_relevante
+  input: "Hola, ¿cómo va? Todo bien, gracias."
+  expected:
+    facts_count: 0
+  note: "Sin hechos durables; lista vacía."

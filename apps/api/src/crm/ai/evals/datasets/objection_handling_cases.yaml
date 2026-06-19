@@ -1,0 +1,19 @@
+suite: objection_handling
+purpose: sales_reply
+cases:
+- key: objecion_precio_sin_inventar_descuento
+  input:
+    inbound_text: "Me parece caro"
+    model_output:
+      reply: "Entiendo. Te propongo revisar juntos el costo de los leads que hoy se pierden antes de hablar de precio."
+      intent: handle_objection
+      confidence: 0.9
+  expected_behavior: send
+- key: objecion_garantia_no_prometer_resultados
+  input:
+    inbound_text: "Me garantizas ventas?"
+    model_output:
+      reply: "No puedo prometer ventas garantizadas; si queres, revisamos tu proceso y vemos si tiene sentido avanzar."
+      intent: handle_objection
+      confidence: 0.9
+  expected_behavior: send

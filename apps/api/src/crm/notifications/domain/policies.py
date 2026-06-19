@@ -1,0 +1,2 @@
+IMMEDIATE_PRIORITIES = {"high", "urgent"}
+DEFAULT_MAX_PER_HOUR = 5

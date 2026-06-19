@@ -1,0 +1,50 @@
+suite: lead_scoring
+purpose: lead_scoring
+cases:
+- key: lead_caliente
+  input:
+    model_output:
+      score: 85
+      temperature: hot
+      pain_points:
+      - pierde leads
+      urgency: high
+      budget_signal: unknown
+      authority_signal: likely_decision_maker
+      business_fit: high
+      technical_match: high
+      risk_penalty: 0
+      next_best_action: propose_call
+      confidence: 0.9
+      reasoning_summary: Dolor claro y urgencia alta.
+  expected_behavior: schema_valid
+  expected_output:
+    temperature: hot
+- key: score_fuera_de_rango
+  input:
+    model_output:
+      score: 180
+      temperature: hot
+      urgency: high
+      budget_signal: unknown
+      authority_signal: unknown
+      business_fit: high
+      technical_match: high
+      next_best_action: call
+      confidence: 0.9
+      reasoning_summary: x
+  expected_behavior: schema_invalid
+- key: temperatura_alucinada
+  input:
+    model_output:
+      score: 70
+      temperature: volcanic
+      urgency: high
+      budget_signal: unknown
+      authority_signal: unknown
+      business_fit: high
+      technical_match: high
+      next_best_action: call
+      confidence: 0.9
+      reasoning_summary: x
+  expected_behavior: schema_invalid

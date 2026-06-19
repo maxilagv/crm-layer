@@ -1,0 +1,62 @@
+- name: "pide_info"
+  input: "Mandame info"
+  expected:
+    intent: "interested"
+    confidence: 0.82
+    next_action: "send_info"
+    objection_type: ""
+  note: "Pide informacion y no expresa rechazo."
+
+- name: "da_disponibilidad"
+  input: "Dale, el martes a la tarde puedo"
+  expected:
+    intent: "interested"
+    confidence: 0.9
+    next_action: "propose_call"
+    objection_type: ""
+  note: "Interes claro + disponibilidad concreta: proponer la llamada."
+
+- name: "tibio_mas_adelante"
+  input: "Ahora estoy a full, mas adelante quiza"
+  expected:
+    intent: "maybe"
+    confidence: 0.7
+    next_action: "schedule_followup"
+    objection_type: "no_ahora"
+  note: "Apertura sin compromiso: nutrir, no descartar."
+
+- name: "objecion_precio"
+  input: "Y eso cuanto sale? porque no tengo mucho presupuesto"
+  expected:
+    intent: "interested"
+    confidence: 0.65
+    next_action: "rebut_objection"
+    objection_type: "precio"
+  note: "Hay interes pero aparece objecion de precio: rebatir con tacto."
+
+- name: "ya_tiene"
+  input: "Gracias pero ya trabajo con alguien"
+  expected:
+    intent: "not_interested"
+    confidence: 0.8
+    next_action: "none"
+    objection_type: "ya_tiene_proveedor"
+  note: "Rechaza sin pedir baja."
+
+- name: "opt_out"
+  input: "No me escriban mas"
+  expected:
+    intent: "do_not_contact"
+    confidence: 0.95
+    next_action: "none"
+    objection_type: ""
+  note: "Opt-out explicito, prioridad maxima."
+
+- name: "ambiguo"
+  input: "👍"
+  expected:
+    intent: "unclear"
+    confidence: 0.3
+    next_action: "ask_qualifying"
+    objection_type: ""
+  note: "No alcanza para decidir la postura."

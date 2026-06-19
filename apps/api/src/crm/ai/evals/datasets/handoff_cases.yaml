@@ -1,0 +1,21 @@
+suite: handoff_cases
+purpose: support_reply
+cases:
+- key: cliente_enojado_derivar
+  input:
+    inbound_text: "Estoy harto, esto es una verguenza"
+    model_output:
+      reply: "Lamento la situacion. Voy a derivarlo con una persona del equipo para resolverlo."
+      intent: escalate
+      should_handoff: true
+      confidence: 0.95
+  expected_behavior: handoff_to_human
+- key: cambio_datos_sensibles_derivar
+  input:
+    inbound_text: "Necesito cambiar datos de pago y contrato"
+    model_output:
+      reply: "Eso requiere validacion humana. Te derivo con el equipo."
+      intent: escalate
+      should_handoff: true
+      confidence: 0.9
+  expected_behavior: handoff_to_human

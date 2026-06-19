@@ -1,0 +1,25 @@
+suite: audio_ticket
+purpose: audio_ticket_extraction
+cases:
+- key: audio_incidente
+  input:
+    model_output:
+      title: Sistema de turnos caído
+      description: No carga desde ayer
+      category: incident
+      priority: high
+      missing_information: []
+      suggested_reply: Lo estamos revisando.
+      owner_summary: Turnos caídos desde ayer
+      confidence: 0.9
+  expected_behavior: schema_valid
+  expected_output:
+    category: incident
+- key: audio_categoria_invalida
+  input:
+    model_output:
+      title: x
+      description: y
+      category: catastrofe
+      confidence: 0.8
+  expected_behavior: schema_invalid

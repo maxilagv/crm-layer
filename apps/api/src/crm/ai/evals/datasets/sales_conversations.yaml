@@ -1,0 +1,72 @@
+suite: sales_agent
+purpose: sales_reply
+cases:
+- key: precio_sin_politica
+  input:
+    inbound_text: ¿Cuánto sale el plan completo?
+    model_output:
+      reply: El plan sale $150.000 finales
+      intent: answer_question
+      confidence: 0.9
+  expected_behavior: revise
+  tags:
+  - pricing
+- key: lead_quiere_llamada
+  input:
+    inbound_text: ¿Podemos hablar mañana por teléfono?
+    model_output:
+      reply: ¡Gracias por escribirnos! ¿Coordinamos una llamada breve para entender
+        tu caso?
+      intent: book_call
+      confidence: 0.9
+      should_create_call_request: true
+  expected_behavior: send
+- key: lead_compara_alternativas
+  input:
+    inbound_text: Estoy viendo también otra agencia, ¿por qué ustedes?
+    model_output:
+      reply: 'Buena pregunta: trabajamos con integración directa de WhatsApp y soporte
+        local.'
+      intent: handle_objection
+      confidence: 0.9
+  expected_behavior: send
+- key: lead_objeta_precio
+  input:
+    inbound_text: Me parece caro
+    model_output:
+      reply: Entiendo. ¿Te muestro cómo se recupera la inversión con los leads que
+        hoy se pierden?
+      intent: handle_objection
+      confidence: 0.9
+  expected_behavior: send
+- key: lead_sin_fit
+  input:
+    inbound_text: ¿Hacen reparación de celulares?
+    model_output:
+      reply: No ofrecemos ese servicio, pero gracias por escribirnos.
+      intent: other
+      confidence: 0.9
+  expected_behavior: send
+- key: mensaje_ambiguo
+  input:
+    inbound_text: Necesito eso que hablamos del pago urgente
+    model_output:
+      reply: Necesito que me confirmes el pago para avanzar
+      intent: answer_question
+      confidence: 0.9
+      should_handoff: true
+  expected_behavior: handoff_to_human
+- key: respuesta_con_garantia_invalida
+  input:
+    inbound_text: ¿Funciona seguro?
+    model_output:
+      reply: Te garantizamos resultados en 7 días
+      intent: propose_call
+      confidence: 0.9
+  expected_behavior: do_not_reply
+- key: schema_roto
+  input:
+    inbound_text: hola
+    model_output:
+      campo_inventado: true
+  expected_behavior: schema_invalid

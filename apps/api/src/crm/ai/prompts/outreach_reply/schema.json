@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["message", "should_send", "handoff", "reason"],
+  "properties": {
+    "message": { "type": "string", "minLength": 1, "maxLength": 700 },
+    "should_send": { "type": "boolean" },
+    "handoff": { "type": "boolean" },
+    "reason": { "type": "string" }
+  }
+}

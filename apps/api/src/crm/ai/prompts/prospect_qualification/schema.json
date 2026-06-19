@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fit_score", "qualified", "signals", "reasoning", "recommended_angle"],
+  "properties": {
+    "fit_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "qualified": { "type": "boolean" },
+    "signals": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reasoning": { "type": "string" },
+    "recommended_angle": { "type": "string" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

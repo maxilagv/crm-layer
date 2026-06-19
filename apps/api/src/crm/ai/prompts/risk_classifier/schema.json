@@ -1,0 +1,48 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "risk_level",
+    "decision",
+    "confidence"
+  ],
+  "properties": {
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "send",
+        "revise",
+        "ask_clarifying_question",
+        "handoff_to_human",
+        "do_not_reply",
+        "notify_owner"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "policy_violations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}

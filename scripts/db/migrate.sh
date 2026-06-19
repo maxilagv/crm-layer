@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -eu
+
+docker compose -f docker-compose.local.yml run --rm api python manage.py migrate
+

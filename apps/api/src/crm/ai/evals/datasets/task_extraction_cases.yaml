@@ -1,0 +1,66 @@
+suite: task_extraction
+purpose: task_extraction
+cases:
+- key: recordame_manana
+  input:
+    model_output:
+      tasks:
+      - title: Mandar presupuesto a Juan
+        description: ''
+        due_at: '2026-06-13T12:00:00-03:00'
+        priority: medium
+        source_message_id: null
+        related_contact_id: null
+        confidence: 0.9
+        requires_confirmation: true
+  expected_behavior: schema_valid
+  expected_output:
+    tasks_count: 1
+- key: mandale_presupuesto
+  input:
+    model_output:
+      tasks:
+      - title: Enviar presupuesto
+        confidence: 0.85
+        requires_confirmation: true
+  expected_behavior: schema_valid
+  expected_output:
+    tasks_count: 1
+- key: seguimiento_viernes
+  input:
+    model_output:
+      tasks:
+      - title: Hacer seguimiento
+        due_at: '2026-06-19T10:00:00-03:00'
+        priority: medium
+        confidence: 0.8
+        requires_confirmation: true
+  expected_behavior: schema_valid
+  expected_output:
+    tasks_count: 1
+- key: revisar_logs_hoy
+  input:
+    model_output:
+      tasks:
+      - title: Revisar logs
+        priority: high
+        confidence: 0.9
+        requires_confirmation: false
+  expected_behavior: schema_valid
+  expected_output:
+    tasks_count: 1
+- key: sin_tareas
+  input:
+    model_output:
+      tasks: []
+  expected_behavior: schema_valid
+  expected_output:
+    tasks_count: 0
+- key: prioridad_invalida
+  input:
+    model_output:
+      tasks:
+      - title: x
+        priority: apocalyptic
+        confidence: 0.9
+  expected_behavior: schema_invalid

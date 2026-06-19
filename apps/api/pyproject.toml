@@ -1,0 +1,77 @@
+[project]
+name = "ai-crm-api"
+version = "0.0.0"
+description = "Django API for the private AI CRM"
+requires-python = ">=3.12"
+dependencies = [
+  "celery>=5.4.0",
+  "dj-database-url>=2.3.0",
+  "django>=5.2,<6.0",
+  "django-cors-headers>=4.6.0",
+  "djangorestframework>=3.15.2",
+  "djangorestframework-simplejwt>=5.3.1",
+  "drf-spectacular>=0.28.0",
+  "gunicorn>=23.0.0",
+  "openai>=1.58.1",
+  "anthropic>=0.42.0",
+  "boto3>=1.35.0",
+  "openpyxl>=3.1.5",
+  "phonenumbers>=8.13.0",
+  "pgvector>=0.3.6",
+  "pydantic>=2.7",
+  "python-pptx>=1.0.2",
+  "pyyaml>=6.0",
+  "reportlab>=4.2.5",
+  "psycopg[binary]>=3.2.3",
+  "python-dotenv>=1.0.1",
+  "redis>=5.2.1",
+  "requests>=2.32.3",
+  "sentry-sdk[celery,django]>=2.19.0",
+  "whitenoise>=6.8.2"
+]
+
+[project.optional-dependencies]
+dev = [
+  "coverage>=7.6.9",
+  "factory-boy>=3.3.1",
+  "fakeredis>=2.26.2",
+  "pytest>=8.3.4",
+  "pytest-cov>=6.0.0",
+  "pytest-django>=4.9.0",
+  "ruff>=0.8.4"
+]
+
+[build-system]
+requires = ["setuptools>=75.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["crm*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "crm.config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+testpaths = ["tests"]
+pythonpath = ["src"]
+# --ds wins over any DJANGO_SETTINGS_MODULE env var (e.g. inside docker compose),
+# so tests always run with the isolated test settings.
+addopts = "--strict-markers --ds=crm.config.settings.test"
+
+[tool.coverage.run]
+source = ["crm"]
+omit = ["*/migrations/*"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["src/**/migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

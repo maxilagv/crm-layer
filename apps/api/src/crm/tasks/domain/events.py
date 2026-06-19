@@ -1,0 +1,7 @@
+TASK_CREATED = "task.created.v1"
+TASK_STATUS_CHANGED = "task.status_changed.v1"
+TASK_REMINDER_SCHEDULED = "task.reminder_scheduled.v1"
+TASK_REMINDER_SENT = "task.reminder_sent.v1"
+TASK_COMMAND_PROCESSED = "task.command_processed.v1"
+TASK_OVERDUE = "task.overdue.v1"
+TASK_EXTRACTED = "task.extracted.v1"

@@ -1,0 +1,14 @@
+# Casos de referencia para el armado de briefs.
+
+- name: app_turnos
+  input: "Charla con ACME: quieren una app de turnos, backend + web, integrar WhatsApp."
+  expected:
+    has_objectives: true
+    has_scope: true
+  note: Brief completo con alcance, hitos y próximos pasos.
+
+- name: charla_temprana
+  input: "Recién arrancamos a hablar, todavía no hay alcance claro."
+  expected:
+    has_open_questions: true
+  note: Pocas certezas → muchas open_questions, estimaciones "A confirmar".

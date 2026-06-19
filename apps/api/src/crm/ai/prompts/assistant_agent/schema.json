@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reply", "intent", "confidence"],
+  "properties": {
+    "reply": {
+      "type": "string",
+      "description": "Mensaje para el dueño por WhatsApp, concreto y accionable."
+    },
+    "intent": {
+      "type": "string",
+      "enum": ["answer", "draft", "summarize", "plan", "remind", "lookup", "other"],
+      "description": "Qué tipo de ayuda diste en este turno."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Qué tan seguro estás de la respuesta."
+    }
+  }
+}

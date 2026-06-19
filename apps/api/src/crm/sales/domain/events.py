@@ -1,0 +1,8 @@
+SALES_REPLY_READY = "sales.reply_ready.v1"
+SALES_REPLY_BLOCKED = "sales.reply_blocked.v1"
+SALES_HOT_LEAD_OWNER_NOTIFICATION = "sales.hot_lead_owner_notification.v1"
+SALES_CALL_REQUESTED = "sales.call_requested.v1"
+SALES_CALL_SCHEDULED = "sales.call_scheduled.v1"
+SALES_OBJECTION_DETECTED = "sales.objection_detected.v1"
+SALES_FOLLOWUP_CREATED = "sales.followup_created.v1"
+SALES_OPPORTUNITY_CREATED = "sales.opportunity_created.v1"

@@ -1,0 +1,35 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	@django path /api/* /admin* /static/*
+	reverse_proxy @django api:8000 {
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 60s
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+
+	reverse_proxy web:3000 {
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 60s
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+}

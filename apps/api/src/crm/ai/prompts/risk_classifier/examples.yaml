@@ -1,0 +1,8 @@
+- name: respuesta_segura
+  input: Gracias por escribirnos, ¿coordinamos una llamada?
+  expected:
+    decision: send
+- name: respuesta_con_garantia
+  input: Te garantizamos 10x más ventas
+  expected:
+    decision: revise

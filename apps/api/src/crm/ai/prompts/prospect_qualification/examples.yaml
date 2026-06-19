@@ -1,0 +1,82 @@
+- name: "debil_pero_prospero"
+  input: "Gomeria sin web, pocas fotos, pero rating 4.6 con 90 reviews que siguen llegando."
+  expected:
+    fit_score: 82
+    qualified: true
+    signals:
+      - "no_website"
+      - "few_photos"
+      - "strong_reviews"
+      - "high_rating"
+    reasoning: "Tiene demanda clara (rating alto y reviews recientes) pero no tiene web ni fotos: funciona offline y le falta presencia. Objetivo ideal."
+    recommended_angle: "Web simple para captar a los que la buscan en Google y hoy no la encuentran."
+    confidence: 0.85
+  note: "El caso de oro: demanda real + hueco digital accionable."
+
+- name: "ya_profesionalizado"
+  input: "Restaurante con web propia, reservas online y 1200 reviews recientes 4.7."
+  expected:
+    fit_score: 22
+    qualified: false
+    signals:
+      - "has_website"
+      - "active_booking"
+      - "strong_reviews"
+      - "already_professionalized"
+    reasoning: "Ya tiene web, reservas online y prueba social fuerte; no necesita profesionalizacion. Mal objetivo."
+    recommended_angle: "No contactar: no hay hueco que resolver."
+    confidence: 0.9
+  note: "Descalificar negocios ya maduros aunque tengan datos de sobra."
+
+- name: "debil_y_muerto"
+  input: "Listado sin web, sin fotos, 1 review de hace 3 anios, sin movimiento."
+  expected:
+    fit_score: 28
+    qualified: false
+    signals:
+      - "no_website"
+      - "stale_listing"
+      - "insufficient_data"
+    reasoning: "No hay senales de demanda: sin reviews recientes ni fotos, parece abandonado. No hay clientes que capturar."
+    recommended_angle: "Saltear: sin demanda, el esfuerzo de outreach no rinde."
+    confidence: 0.6
+  note: "Debil pero muerto != debil pero prospero. Bajar el score."
+
+- name: "salon_sin_reservas"
+  input: "Peluqueria con buen rating y fotos, turnos solo por telefono."
+  expected:
+    fit_score: 74
+    qualified: true
+    signals:
+      - "no_online_booking"
+      - "high_rating"
+      - "many_photos"
+    reasoning: "Negocio activo y cuidado, pero pierde tiempo y turnos por no tener reserva online, que en este rubro es decisiva."
+    recommended_angle: "Link de reservas para dejar de perder turnos respondiendo mensajes."
+    confidence: 0.8
+  note: "Cuna por vertical: reserva online pesa mucho en estetica."
+
+- name: "categoria_no_coincide"
+  input: "Campana de gomerias, pero el prospecto es una ferreteria."
+  expected:
+    fit_score: 15
+    qualified: false
+    signals:
+      - "category_mismatch"
+    reasoning: "La categoria no coincide con la campana; aunque tenga huecos digitales, no es el publico buscado."
+    recommended_angle: "Descartar por rubro."
+    confidence: 0.9
+  note: "Penalizar fuerte el mismatch de categoria."
+
+- name: "datos_insuficientes"
+  input: "Solo nombre y direccion; sin telefono, sin rating, sin fotos."
+  expected:
+    fit_score: 38
+    qualified: false
+    signals:
+      - "insufficient_data"
+      - "missing_phone"
+    reasoning: "Huella casi vacia: no alcanza para afirmar que hay demanda ni para contactarlo bien. Mejor reunir mas datos antes."
+    recommended_angle: "Enriquecer datos antes de decidir."
+    confidence: 0.4
+  note: "Con poca huella, cap a <=40 y confianza baja."

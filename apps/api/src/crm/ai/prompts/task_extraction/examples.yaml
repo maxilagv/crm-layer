@@ -1,0 +1,8 @@
+- name: recordatorio_simple
+  input: Recordame mañana mandarle el presupuesto a Juan
+  expected:
+    tasks_count: 1
+- name: sin_tarea
+  input: jaja buenísimo, gracias!
+  expected:
+    tasks_count: 0

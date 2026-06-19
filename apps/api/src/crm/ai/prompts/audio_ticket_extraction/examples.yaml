@@ -1,0 +1,5 @@
+- name: audio_incidente_turnos
+  input: Hola, desde ayer el sistema de turnos no carga, necesito que lo vean urgente
+  expected:
+    category: incident
+    priority: high

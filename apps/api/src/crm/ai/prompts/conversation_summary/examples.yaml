@@ -1,0 +1,4 @@
+- name: resumen_corto
+  input: conversación de 12 mensajes
+  expected:
+    summary_type: short

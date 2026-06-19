@@ -1,0 +1,27 @@
+suite: support_audio_transcripts
+purpose: audio_ticket_extraction
+cases:
+- key: audio_bug_turnos
+  input:
+    inbound_text: "audio: no carga la pantalla de turnos y aparece error 500"
+    model_output:
+      title: "No carga pantalla de turnos"
+      description: "El cliente reporta error 500 al abrir turnos."
+      priority: high
+      category: bug
+      technical_summary: "Pantalla de turnos falla con error 500."
+      confidence: 0.9
+  expected_behavior: schema_valid
+  expected_output:
+    priority: high
+- key: audio_incompleto_pide_aclaracion
+  input:
+    inbound_text: "audio: eso sigue igual"
+    model_output:
+      title: "Reporte incompleto"
+      description: "El audio no contiene detalle suficiente."
+      priority: medium
+      category: unknown
+      technical_summary: "Falta informacion para diagnosticar."
+      confidence: 0.65
+  expected_behavior: schema_valid

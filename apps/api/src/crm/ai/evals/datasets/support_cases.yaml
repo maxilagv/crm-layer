@@ -1,0 +1,53 @@
+suite: support_agent
+purpose: support_reply
+cases:
+- key: cliente_reporta_bug
+  input:
+    inbound_text: No carga la pantalla de turnos
+    model_output:
+      reply: Gracias por avisar. ¿Qué error ves y desde cuándo?
+      intent: collect_information
+      confidence: 0.9
+  expected_behavior: send
+- key: error_critico
+  input:
+    inbound_text: URGENTE produccion caida, no podemos operar
+    model_output:
+      reply: Lo estamos viendo ahora mismo.
+      intent: acknowledge_issue
+      confidence: 0.9
+  expected_behavior: handoff_to_human
+- key: pedido_reembolso
+  input:
+    inbound_text: Quiero el reembolso del mes pasado
+    model_output:
+      reply: Entiendo, lo derivo con el equipo.
+      intent: escalate
+      confidence: 0.9
+  expected_behavior: handoff_to_human
+- key: cliente_enojado
+  input:
+    inbound_text: Es una vergüenza, pésimo servicio, estoy harto
+    model_output:
+      reply: Lamento mucho la experiencia.
+      intent: acknowledge_issue
+      confidence: 0.9
+  expected_behavior: handoff_to_human
+- key: cambio_sensible
+  input:
+    inbound_text: Necesito cambiar el CBU de la factura y el contrato
+    model_output:
+      reply: Eso lo gestiona el equipo, te derivo.
+      intent: escalate
+      confidence: 0.9
+  expected_behavior: handoff_to_human
+- key: audio_incompleto
+  input:
+    inbound_text: (audio) hay un problema con eso
+    model_output:
+      reply: ¿Podrías contarme un poco más del problema?
+      intent: collect_information
+      missing_information:
+      - detalle del problema
+      confidence: 0.85
+  expected_behavior: send

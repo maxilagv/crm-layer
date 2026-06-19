@@ -1,0 +1,26 @@
+- name: "objecion_precio"
+  input: "mode=reply; objection_type=precio; el prospecto dice que le parece caro."
+  expected:
+    message: "Si, tiene sentido cuidarlo. Por eso no arrancaria con algo grande: te puedo mostrar una version simple para que la gente te encuentre, vea horarios y te escriba directo. La miras 10 min y si no te cierra, listo. Te la paso?"
+    should_send: true
+    handoff: false
+    reason: "Valida la objecion y propone un paso chico sin presionar."
+  note: "Responde objecion concreta, una pregunta, salida facil."
+
+- name: "followup_suave"
+  input: "mode=followup; prospecto no respondio al primer mensaje."
+  expected:
+    message: "Te dejo esto por aca y no te molesto mas: vi una mejora simple para que te encuentren mejor desde el celu. Si queres, te mando el ejemplo y lo ves cuando puedas."
+    should_send: true
+    handoff: false
+    reason: "Follow-up corto, respetuoso y con salida facil."
+  note: "No reclama respuesta ni insiste de mas."
+
+- name: "handoff_sensible"
+  input: "mode=reply; el prospecto pide contrato, pagos o una decision sensible."
+  expected:
+    message: "Prefiero que esto lo vea Martin directo para no responderte cualquier cosa. Ya le aviso y te contesta el."
+    should_send: false
+    handoff: true
+    reason: "La conversacion requiere decision humana."
+  note: "Deriva al owner cuando hay riesgo o falta contexto."

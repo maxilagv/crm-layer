@@ -1,0 +1,7 @@
+LEAD_CREATED = "lead.created.v1"
+LEAD_STAGE_CHANGED = "lead.stage_changed.v1"
+LEAD_SCORED = "lead.scored.v1"
+LEAD_HOT_DETECTED = "lead.hot_detected.v1"
+LEAD_CONVERTED_TO_CLIENT = "lead.converted_to_client.v1"
+LEAD_LOST = "lead.lost.v1"
+LEAD_UNQUALIFIED = "lead.unqualified.v1"

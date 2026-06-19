@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["facts"],
+  "properties": {
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["memory_type", "content"],
+        "properties": {
+          "memory_type": {
+            "type": "string",
+            "enum": [
+              "preference",
+              "pain_point",
+              "technical_context",
+              "commercial_context",
+              "support_context",
+              "objection",
+              "commitment"
+            ]
+          },
+          "content": { "type": "string" },
+          "importance": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "expires_in_days": { "type": ["integer", "null"] }
+        }
+      }
+    }
+  }
+}

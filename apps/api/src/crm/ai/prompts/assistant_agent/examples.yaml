@@ -1,0 +1,26 @@
+# Casos de referencia para el asistente personal del dueño.
+
+- name: redactar_mensaje
+  input: "Pasame un mensaje para avisarle a un cliente que la entrega se atrasa 2 días."
+  expected:
+    intent: draft
+    confidence: 0.9
+  note: Redactar el mensaje listo para copiar/pegar, tono profesional y honesto.
+
+- name: resumen_del_dia
+  input: "Resumime cómo viene el día."
+  expected:
+    intent: summarize
+  note: Resumen breve y accionable de lo que haya en contexto; si no hay datos, decirlo.
+
+- name: idea_o_consulta
+  input: "¿Cómo le cobro un proyecto a medida sin asustar al cliente?"
+  expected:
+    intent: answer
+  note: Respuesta concreta y útil, como un colega con criterio comercial.
+
+- name: organizar
+  input: "Tengo 3 reuniones y 2 propuestas pendientes, ¿por dónde arranco?"
+  expected:
+    intent: plan
+  note: Priorizar en pasos cortos; pedir el único dato que falte si hace falta.

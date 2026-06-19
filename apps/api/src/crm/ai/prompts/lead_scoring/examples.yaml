@@ -1,0 +1,6 @@
+- name: lead_caliente_con_dolor_claro
+  input: Pierdo clientes porque no llego a responder los WhatsApp, ¿me pueden ayudar
+    esta semana?
+  expected:
+    temperature: hot
+    urgency: high

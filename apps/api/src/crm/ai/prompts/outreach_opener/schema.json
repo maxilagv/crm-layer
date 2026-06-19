@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["message", "references_signal"],
+  "properties": {
+    "message": { "type": "string", "minLength": 1, "maxLength": 520 },
+    "references_signal": { "type": "string" }
+  }
+}

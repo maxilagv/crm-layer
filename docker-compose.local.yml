@@ -1,0 +1,76 @@
+include:
+  - docker-compose.yml
+
+x-api-base: &api-base
+  build:
+    context: .
+    dockerfile: infra/docker/api.Dockerfile
+  working_dir: /app/apps/api
+  env_file:
+    - path: .env
+      required: false
+  environment: &api-environment
+    DJANGO_SETTINGS_MODULE: crm.config.settings.local
+    DATABASE_URL: postgres://ai_crm:ai_crm@postgres:5432/ai_crm
+    REDIS_URL: redis://redis:6379/0
+  volumes:
+    - .:/app
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  api:
+    <<: *api-base
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/api/health/live/ >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    <<: *api-base
+    environment:
+      <<: *api-environment
+      SERVICE_NAME: worker
+    # -Q must list EVERY queue used in settings.CELERY_TASK_ROUTES (plus the default
+    # `celery`), or beat tasks routed to a missing queue (reminders, escalation, digest…)
+    # are published to Redis and never consumed.
+    command: >-
+      celery -A crm.config worker --loglevel=INFO
+      -Q celery,ai_fast,ai_slow,transcription,image_generation,embeddings,evals,operations,notifications,automations,analytics,monitoring
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A crm.config inspect ping -t 5 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  scheduler:
+    <<: *api-base
+    environment:
+      <<: *api-environment
+      SERVICE_NAME: scheduler
+    # Beat state file lives outside the bind mount so it never pollutes the repo.
+    command: celery -A crm.config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    command: pnpm --filter @ai-crm/web dev --hostname 0.0.0.0
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/web/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api

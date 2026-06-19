@@ -1,0 +1,86 @@
+# ─────────────────────────────────────────────────────────────
+# crm-layer .gitignore — nada de secretos ni basura en GitHub.
+# Regla: lo único que se sube es CÓDIGO, CONFIG de ejemplo y DOCS.
+# ─────────────────────────────────────────────────────────────
+
+# Dependencies / build
+node_modules/
+.pnpm-store/
+.turbo/
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.egg-info/
+.eggs/
+staticfiles/
+celerybeat-schedule
+celerybeat.pid
+
+# ── Secrets / env (LO MÁS IMPORTANTE) ──
+# Se ignora todo .env y variantes; se reincluyen SOLO las plantillas de ejemplo.
+.env
+.env.*
+*.env
+!.env.example
+!.env.prod.example
+!apps/wa-bridge/.env.example
+# Credenciales / claves / certificados — nunca al repo
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*credentials*.json
+*service-account*.json
+*secret*.json
+secrets/
+.secrets/
+
+# WhatsApp bridge session (whatsapp-web.js) — tokens + estado de máquina
+.wwebjs_auth/
+.wwebjs_cache/
+**/.wwebjs_auth/
+**/.wwebjs_cache/
+
+# Datos locales / runtime
+postgres-data/
+redis-data/
+media/
+storage/
+backups/
+*.sqlite3
+db.sqlite3
+*.dump
+*.sql.gz
+
+# Logs / temporales
+*.log
+logs/
+tmp/
+*.pid
+
+# OS y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

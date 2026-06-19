@@ -1,0 +1,22 @@
+# Casos de referencia para el redactor de documentos.
+
+- name: propuesta_software
+  input: "/propuesta para ACME: app de turnos, backend + web, 3 meses de soporte"
+  expected:
+    title: "Propuesta de desarrollo"
+    has_items: true
+  note: Propuesta completa con alcance, cronograma e inversión por ítems.
+
+- name: presupuesto_simple
+  input: "/presupuesto landing institucional 800000 y hosting 50000 por mes x12"
+  expected:
+    title: "Presupuesto"
+    has_items: true
+  note: Foco en ítems y precios; condiciones de pago claras.
+
+- name: informe_sin_precios
+  input: "/informe estado del proyecto: avances de la semana y próximos pasos"
+  expected:
+    title: "Informe de estado"
+    has_items: false
+  note: Secciones narrativas, sin ítems de precio.

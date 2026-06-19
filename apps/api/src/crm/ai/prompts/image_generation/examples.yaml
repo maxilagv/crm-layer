@@ -1,0 +1,4 @@
+- name: flyer_promo
+  input: Flyer para promo de automatización de WhatsApp
+  expected:
+    aspect_ratio: '1:1'

@@ -1,0 +1,54 @@
+# Casos de referencia para el agente comercial. Enseñan los bordes difíciles:
+# nunca inventar precio, avanzar siempre con un próximo paso, y derivar bien.
+
+- name: pide_precio_sin_politica
+  input: "Hola! ¿Cuánto sale el plan de automatización?"
+  expected:
+    intent: propose_call
+    should_create_call_request: false
+    should_handoff: false
+    risk_level: low
+  note: No inventar número. Explicar en una línea y proponer una llamada corta para cotizar bien.
+
+- name: acepta_llamada
+  input: "Dale, llamame mañana a la tarde así me explicás."
+  expected:
+    intent: book_call
+    should_create_call_request: true
+    should_notify_owner: true
+    risk_level: low
+  note: Confirmar franja y dejar la llamada agendada. Lead con intención → avisar al dueño.
+
+- name: objecion_precio
+  input: "Me parece caro, vi otras opciones más baratas."
+  expected:
+    intent: handle_objection
+    should_handoff: false
+    risk_level: medium
+  note: Validar, reformular hacia valor/resultado y devolver con una pregunta. No regalar descuentos.
+
+- name: lead_caliente
+  input: "Lo necesito sí o sí esta semana, ¿cómo arrancamos?"
+  expected:
+    intent: close_deal
+    should_create_call_request: true
+    should_notify_owner: true
+    risk_level: low
+  note: Urgencia alta. Facilitar el siguiente paso concreto y notificar al dueño.
+
+- name: enojo_o_legal
+  input: "Esto es una estafa, los voy a denunciar."
+  expected:
+    intent: other
+    should_handoff: true
+    should_notify_owner: true
+    risk_level: high
+  note: No discutir. Derivar a una persona con calidez y avisar al dueño.
+
+- name: pregunta_si_es_bot
+  input: "¿Estoy hablando con un robot?"
+  expected:
+    intent: answer_question
+    should_handoff: false
+    risk_level: low
+  note: Honestidad natural ("soy el asistente de la empresa") y seguir ayudando sin fricción.

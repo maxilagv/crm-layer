@@ -1,0 +1,4 @@
+{
+  "extends": "@ai-crm/tsconfig/base.json",
+  "include": ["src"]
+}

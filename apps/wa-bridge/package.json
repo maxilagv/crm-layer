@@ -1,0 +1,15 @@
+{
+  "name": "@ai-crm/wa-bridge",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Puente WhatsApp no oficial (whatsapp-web.js) para pruebas locales.",
+  "scripts": {
+    "start": "node --env-file=.env index.mjs",
+    "start:noenv": "node index.mjs"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

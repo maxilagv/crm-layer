@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title"],
+  "properties": {
+    "title": { "type": "string" },
+    "summary": { "type": "string" },
+    "objectives": { "type": "array", "items": { "type": "string" } },
+    "scope": { "type": "array", "items": { "type": "string" } },
+    "deliverables": { "type": "array", "items": { "type": "string" } },
+    "milestones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "open_questions": { "type": "array", "items": { "type": "string" } },
+    "estimated_timeline": { "type": "string" },
+    "estimated_budget": { "type": "string" },
+    "next_steps": { "type": "array", "items": { "type": "string" } }
+  }
+}

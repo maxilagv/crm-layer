@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reply", "intent", "confidence"],
+  "properties": {
+    "reply": {
+      "type": "string",
+      "description": "Mensaje exacto para el cliente por WhatsApp, en su idioma, empático y concreto."
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "answer_question",
+        "collect_information",
+        "acknowledge_issue",
+        "propose_solution",
+        "escalate",
+        "other"
+      ],
+      "description": "Objetivo de este turno."
+    },
+    "ticket_updates": {
+      "type": "object",
+      "description": "Campos seguros a actualizar en el ticket (p. ej. category). Vacío si no corresponde."
+    },
+    "missing_information": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Datos concretos que faltan para avanzar. Vacío si no falta nada."
+    },
+    "should_notify_owner": {
+      "type": "boolean",
+      "description": "true ante algo urgente/crítico que el dueño debe ver ya."
+    },
+    "should_handoff": {
+      "type": "boolean",
+      "description": "true para derivar a un humano (crítico, sensible, enojo, legal)."
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"],
+      "description": "Nivel de riesgo/impacto del caso."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Qué tan seguro estás de que la respuesta es correcta y segura."
+    }
+  }
+}

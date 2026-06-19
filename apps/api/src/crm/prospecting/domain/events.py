@@ -1,0 +1,6 @@
+PROSPECT_QUALIFIED = "prospecting.prospect_qualified.v1"
+PROSPECT_DISQUALIFIED = "prospecting.prospect_disqualified.v1"
+PROSPECT_QUALIFICATION_FAILED = "prospecting.prospect_qualification_failed.v1"
+PROSPECT_OUTREACH_QUEUED = "prospecting.outreach_queued.v1"
+PROSPECT_REPLY_INTERPRETED = "prospecting.reply_interpreted.v1"
+PROSPECT_INTERESTED = "prospecting.prospect_interested.v1"

@@ -1,0 +1,6 @@
+NOTIFICATION_CREATED = "notification.created.v1"
+NOTIFICATION_DELIVERY_QUEUED = "notification.delivery_queued.v1"
+NOTIFICATION_DELIVERY_SENT = "notification.delivery_sent.v1"
+NOTIFICATION_DELIVERY_FAILED = "notification.delivery_failed.v1"
+NOTIFICATION_SUPPRESSED = "notification.suppressed.v1"
+NOTIFICATION_DIGEST_BUILT = "notification.digest_built.v1"

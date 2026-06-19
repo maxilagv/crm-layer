@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title"],
+  "properties": {
+    "title": { "type": "string", "description": "Título del documento." },
+    "subtitle": { "type": "string" },
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "contact": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "tax_id": { "type": "string" },
+        "address": { "type": "string" }
+      }
+    },
+    "intro": { "type": "string" },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "heading": { "type": "string" },
+          "body": { "type": "string" }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description"],
+        "properties": {
+          "description": { "type": "string" },
+          "quantity": { "type": "number" },
+          "unit": { "type": "string" },
+          "unit_price": { "type": "number" }
+        }
+      }
+    },
+    "currency": { "type": "string" },
+    "tax_rate": { "type": "number" },
+    "notes": { "type": "string" },
+    "terms": { "type": "string" },
+    "valid_until": { "type": "string" },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document_number": { "type": "string" }
+      }
+    }
+  }
+}

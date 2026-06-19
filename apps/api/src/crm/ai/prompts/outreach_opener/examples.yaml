@@ -1,0 +1,34 @@
+- name: "sin_web"
+  input: "Prospecto: gomeria con buenas resenas pero sin sitio web."
+  expected:
+    message: "Hola! Soy Martin, armo webs simples para negocios de barrio. Te encontre buscando gomerias en la zona y vi que no tenes una pagina propia donde te ubiquen con horarios y direccion. Te preparo una idea de como te quedaria, sin compromiso. Te la muestro por aca? Si no te sirve, decime y listo."
+    references_signal: "no_website"
+  note: "Senal concreta (no web), oferta gratis, una sola pregunta, salida facil."
+
+- name: "sin_reservas_online"
+  input: "Prospecto: peluqueria con muchas resenas, turnos solo por mensaje."
+  expected:
+    message: "Hola, soy Martin. Vi que tenes muy buenas resenas pero los turnos los manejas todo por mensaje. Ayudo a lugares como el tuyo a sumar un link de reservas para no vivir respondiendo 'tenes lugar?'. Te tiro un ejemplo de como funcionaria? Si no va, sin drama."
+    references_signal: "no_online_booking"
+  note: "Dolor real del rubro (perder tiempo en turnos), resultado concreto."
+
+- name: "pocas_fotos"
+  input: "Prospecto: taller mecanico con casi nada de fotos en Google."
+  expected:
+    message: "Buenas, soy Martin. Pase por tu taller en Google y vi que casi no hay fotos del laburo que hacen. La gente elige mucho por lo que ve antes de llamar. Te paso 2 o 3 ideas concretas de que fotos sumar para que entren mas consultas. Te las mando por aca? Si preferis que no te escriba, decime."
+    references_signal: "few_photos"
+  note: "Observacion especifica + oferta puntual (2-3 ideas), no promete numeros."
+
+- name: "pocas_resenas"
+  input: "Prospecto: distribuidora con presencia pero casi sin resenas."
+  expected:
+    message: "Hola, soy Martin. Te ubico como distribuidora en la zona pero casi no tenes resenas en Google, y eso hace que aparezcas mas abajo cuando te buscan. Tengo una forma simple de que tus clientes te dejen resena sin que sea un quilombo. Te cuento la idea en dos lineas? Si no te interesa, lo dejamos aca."
+    references_signal: "low_reviews"
+  note: "Conecta la senal con una consecuencia (aparecer mas abajo)."
+
+- name: "rating_bajo_con_tacto"
+  input: "Prospecto: local con movimiento pero promedio bajo por resenas viejas."
+  expected:
+    message: "Hola, soy Martin. Vi que tu local tiene movimiento pero un par de resenas viejas te bajaron el promedio en Google. Ayudo a negocios a ordenar esa imagen y a que las buenas opiniones pesen mas. Te muestro un ejemplo concreto, sin compromiso? Si no es para vos, decime tranqui."
+    references_signal: "low_rating"
+  note: "Tema sensible tratado con tacto, sin culpar al dueno."

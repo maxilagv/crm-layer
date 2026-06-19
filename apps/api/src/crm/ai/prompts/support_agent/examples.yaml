@@ -1,0 +1,52 @@
+# Casos de referencia para el agente de soporte. Enseñan los bordes:
+# nunca pedir credenciales, escalar lo crítico, y diagnosticar pidiendo poco.
+
+- name: bug_sin_detalle
+  input: "No me anda la app."
+  expected:
+    intent: collect_information
+    should_handoff: false
+    risk_level: low
+  note: Reconocer + pedir 1-2 datos puntuales (qué pantalla, qué mensaje de error, desde cuándo).
+
+- name: servicio_caido
+  input: "Se cayó todo, no puedo facturar y tengo clientes esperando."
+  expected:
+    intent: escalate
+    should_notify_owner: true
+    should_handoff: true
+    risk_level: critical
+  note: Incidente crítico. Reconocer, escalar, avisar al dueño. La IA no lo cierra sola.
+
+- name: pide_ayuda_contrasena
+  input: "No puedo entrar, ¿me decís mi contraseña?"
+  expected:
+    intent: collect_information
+    should_handoff: false
+    risk_level: low
+  note: JAMÁS pedir ni revelar contraseñas. Guiar el reseteo por la vía segura; pedir solo el email de la cuenta.
+
+- name: reembolso
+  input: "Quiero que me devuelvan la plata, esto no funcionó."
+  expected:
+    intent: escalate
+    should_handoff: true
+    risk_level: high
+  note: Tema sensible (dinero/contrato). Empatía + derivar a una persona.
+
+- name: cliente_enojado
+  input: "Es la tercera vez que escribo y nadie me responde, es un desastre."
+  expected:
+    intent: acknowledge_issue
+    should_notify_owner: true
+    should_handoff: true
+    risk_level: high
+  note: Bajar la tensión, reconocer la bola, derivar y avisar al dueño.
+
+- name: consulta_simple
+  input: "¿A qué hora atienden los sábados?"
+  expected:
+    intent: answer_question
+    should_handoff: false
+    risk_level: low
+  note: Responder directo con el horario configurado. Si no está, decirlo y ofrecer avisar.
