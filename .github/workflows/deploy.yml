@@ -1,0 +1,43 @@
+name: Deploy (Contabo VPS)
+
+# Despliega por SSH al VPS. Requiere que el bootstrap inicial ya haya dejado el repo
+# clonado + .env.prod en el server (ver docs/runbooks/deploy-contabo.md).
+#
+# Secrets de GitHub a configurar (Settings -> Secrets and variables -> Actions):
+#   VPS_HOST     -> 173.249.11.196
+#   VPS_USER     -> deploy        (o root si todavía no creaste el usuario)
+#   VPS_APP_DIR  -> /opt/crm-layer (ruta del repo clonado en el VPS)
+#   VPS_SSH_KEY  -> contenido de la clave PRIVADA del par de deploy (sin passphrase)
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: SSH deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.VPS_APP_DIR }}"
+            git fetch --all --prune
+            git reset --hard origin/main
+            make prod-up
+            make prod-migrate
+            docker image prune -f || true
