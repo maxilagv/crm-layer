@@ -66,9 +66,11 @@ redis-data/
 media/
 storage/
 backups/
-# ...pero los scripts FUENTE de backup del repo sí van (no son datos runtime)
+# ...pero el CÓDIGO FUENTE del repo sí va (no son datos runtime). Estos patrones
+# de directorio (media/ backups/) también matcheaban paquetes Python del backend.
 !infra/backups/
 !infra/backups/**
+!apps/api/src/crm/media/
 *.sqlite3
 db.sqlite3
 *.dump
