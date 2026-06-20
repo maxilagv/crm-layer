@@ -66,6 +66,9 @@ redis-data/
 media/
 storage/
 backups/
+# ...pero los scripts FUENTE de backup del repo sí van (no son datos runtime)
+!infra/backups/
+!infra/backups/**
 *.sqlite3
 db.sqlite3
 *.dump

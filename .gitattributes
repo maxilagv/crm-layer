@@ -1,0 +1,12 @@
+# Normalize line endings. Shell scripts MUST be LF or their shebang breaks in
+# Linux containers. Other text files: let git normalize to LF in the repo.
+* text=auto eol=lf
+*.sh text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
