@@ -4,7 +4,7 @@
  * Use only with a test number. This unofficial bridge is for local validation
  * until the official Meta Cloud API flow is configured.
  */
-import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import QRCode from "qrcode";
 import pkg from "whatsapp-web.js";
@@ -18,21 +18,26 @@ function clearChromiumLocks(dir = ".wwebjs_auth") {
   if (!existsSync(dir)) return;
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
+    // Los locks (SingletonLock/Cookie/Socket) son SYMLINKS colgados al host viejo.
+    // Hay que borrarlos sin seguir el symlink (lstat, no stat) — si no, stat falla
+    // sobre el target inexistente y el lock rancio sobrevive.
+    if (name.startsWith("Singleton")) {
+      try {
+        rmSync(full, { force: true, recursive: true });
+        console.log(`cleared stale chromium lock: ${full}`);
+      } catch {
+        /* best-effort */
+      }
+      continue;
+    }
     let st;
     try {
-      st = statSync(full);
+      st = lstatSync(full);
     } catch {
       continue;
     }
     if (st.isDirectory()) {
       clearChromiumLocks(full);
-    } else if (name.startsWith("Singleton")) {
-      try {
-        rmSync(full, { force: true });
-        console.log(`cleared stale chromium lock: ${full}`);
-      } catch {
-        /* best-effort */
-      }
     }
   }
 }
