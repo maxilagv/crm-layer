@@ -24,6 +24,8 @@
 		}
 	}
 
-	# El frontend vive en Vercel. Cualquier otra ruta redirige alla.
-	redir https://crm-layer-web.vercel.app{uri}
+	# El frontend vive en Vercel. Todo lo que NO sea backend redirige alla.
+	# (el matcher evita que el redir se trague /api, /admin y /static)
+	@frontend not path /api/* /admin* /static/*
+	redir @frontend https://crm-layer-web.vercel.app{uri}
 }
