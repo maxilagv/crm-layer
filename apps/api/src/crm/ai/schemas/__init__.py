@@ -16,6 +16,7 @@ from .image_generation import ImageGenerationSchema
 from .lead_score import LeadScoreSchema
 from .memory_extraction import MemoryExtractionSchema
 from .moderation_result import ModerationResultSchema
+from .outreach_email import OutreachEmailSchema
 from .outreach_opener import OutreachOpenerSchema
 from .outreach_reply import OutreachReplySchema
 from .project_brief import ProjectBriefSchema
@@ -37,6 +38,7 @@ __all__ = [
     "LeadScoreSchema",
     "MemoryExtractionSchema",
     "ModerationResultSchema",
+    "OutreachEmailSchema",
     "OutreachOpenerSchema",
     "OutreachReplySchema",
     "ProjectBriefSchema",

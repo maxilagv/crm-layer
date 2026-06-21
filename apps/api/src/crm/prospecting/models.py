@@ -1,6 +1,7 @@
 """Models for the autonomous sales agent: campaigns and prospects."""
 
 from django.db import models
+from django.utils import timezone
 
 from crm.core.models import BaseModel
 
@@ -140,3 +141,54 @@ class Prospect(BaseModel):
 
     def __str__(self) -> str:
         return self.business_name
+
+
+class ProspectEmailMessage(BaseModel):
+    """Email outreach record for prospects, separate from WhatsApp outbound messages."""
+
+    class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        SENT = "sent", "Sent"
+        FAILED = "failed", "Failed"
+        BOUNCED = "bounced", "Bounced"
+
+    prospect = models.ForeignKey(
+        Prospect,
+        on_delete=models.CASCADE,
+        related_name="email_messages",
+    )
+    campaign = models.ForeignKey(
+        ProspectingCampaign,
+        on_delete=models.CASCADE,
+        related_name="email_messages",
+    )
+    to_email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.QUEUED)
+    provider_message_id = models.CharField(max_length=255, blank=True)
+    idempotency_key = models.CharField(max_length=255)
+    available_at = models.DateTimeField(default=timezone.now, db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    bounced_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "prospecting_email_message"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization_id", "idempotency_key"],
+                name="uniq_prospect_email_idempotency",
+                nulls_distinct=False,
+            )
+        ]
+        indexes = [
+            models.Index(fields=["organization_id", "deleted_at"]),
+            models.Index(fields=["campaign", "status"]),
+            models.Index(fields=["status", "available_at"]),
+            models.Index(fields=["organization_id", "to_email"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.to_email}:{self.status}"

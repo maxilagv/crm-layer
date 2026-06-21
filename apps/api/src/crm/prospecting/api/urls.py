@@ -6,6 +6,8 @@ from .views import (
     CampaignRunOutreachView,
     CampaignsView,
     ProspectDetailView,
+    ProspectEmailUnsubscribeView,
+    ProspectingReportView,
     ProspectsView,
 )
 
@@ -27,9 +29,15 @@ urlpatterns = [
         name="prospecting-campaign-run-outreach",
     ),
     path("prospects/", ProspectsView.as_view(), name="prospecting-prospects"),
+    path("report/", ProspectingReportView.as_view(), name="prospecting-report"),
     path(
         "prospects/<uuid:prospect_id>/",
         ProspectDetailView.as_view(),
         name="prospecting-prospect-detail",
+    ),
+    path(
+        "unsubscribe/<path:token>/",
+        ProspectEmailUnsubscribeView.as_view(),
+        name="prospecting-email-unsubscribe",
     ),
 ]

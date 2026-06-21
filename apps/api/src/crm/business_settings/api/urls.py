@@ -4,6 +4,7 @@ from .views import (
     AIBehaviorPolicyView,
     BusinessProfileView,
     NotificationPolicyView,
+    ProspectingPolicyView,
     SalesPolicyView,
     SupportPolicyView,
     WhatsAppPolicyView,
@@ -20,4 +21,9 @@ urlpatterns = [
         name="settings-notification-policy",
     ),
     path("whatsapp-policy/", WhatsAppPolicyView.as_view(), name="settings-whatsapp-policy"),
+    path(
+        "prospecting-policy/",
+        ProspectingPolicyView.as_view(),
+        name="settings-prospecting-policy",
+    ),
 ]

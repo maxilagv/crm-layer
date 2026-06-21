@@ -50,6 +50,7 @@ SERVICE_NAME = env("SERVICE_NAME", "api")
 APP_VERSION = env("APP_VERSION", "0.1.0")
 GIT_COMMIT = env("GIT_COMMIT", "unknown")
 BUILD_DATE = env("BUILD_DATE", "unknown")
+PUBLIC_APP_URL = env("PUBLIC_APP_URL", "http://localhost:3000")
 
 # No fallback here on purpose: environments must provide SECRET_KEY (local and
 # test set safe development values). Django fails closed if it stays empty.
@@ -235,6 +236,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "prospecting.run_followups",
         "schedule": float(env("PROSPECTING_FOLLOWUP_INTERVAL_SECONDS", "21600")),
     },
+    "prospecting-send-due-emails": {
+        "task": "prospecting.send_due_emails",
+        "schedule": float(env("PROSPECTING_EMAIL_SEND_INTERVAL_SECONDS", "300")),
+    },
 }
 # AI workloads run on dedicated queues so an image render or a long audio never
 # blocks a hot sales reply.
@@ -285,6 +290,7 @@ CELERY_TASK_ROUTES = {
     "prospecting.qualify_prospect": {"queue": "ai_fast"},
     "prospecting.run_outreach": {"queue": "ai_fast"},
     "prospecting.run_followups": {"queue": "ai_slow"},
+    "prospecting.send_due_emails": {"queue": "notifications"},
     "prospecting.interpret_reply": {"queue": "ai_fast"},
 }
 
@@ -311,6 +317,13 @@ APOLLO_DAILY_CAP = int(env("APOLLO_DAILY_CAP", "50"))
 APOLLO_MONTHLY_CAP = int(env("APOLLO_MONTHLY_CAP", "500"))
 HUNTER_API_KEY = env("HUNTER_API_KEY")
 HUNTER_MONTHLY_CAP = int(env("HUNTER_MONTHLY_CAP", "40"))
+RESEND_API_KEY = env("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "soporte@weblayer.cloud")
+PROSPECTING_EMAIL_DAILY_CAP = int(env("PROSPECTING_EMAIL_DAILY_CAP", "50"))
+PROSPECTING_EMAIL_FOOTER_ADDRESS = env(
+    "PROSPECTING_EMAIL_FOOTER_ADDRESS",
+    "WebLayer, Buenos Aires, Argentina",
+)
 WHATSAPP_ACCESS_TOKEN = env("WHATSAPP_ACCESS_TOKEN")
 # Unofficial WhatsApp bridge (whatsapp-web.js) — temporary, for local testing.
 WA_BRIDGE_SHARED_SECRET = env("WA_BRIDGE_SHARED_SECRET", "dev-bridge-secret")

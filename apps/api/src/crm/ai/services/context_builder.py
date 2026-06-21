@@ -6,6 +6,7 @@ redact obvious sensitive sequences. Everything returned here may end up inside
 a prompt — treat it as outbound.
 """
 
+from django.conf import settings
 from django.utils import timezone
 
 from crm.ai.domain.policies import SENSITIVE_DATA_PATTERNS
@@ -419,6 +420,28 @@ class ContextBuilder:
             "prospect_profile": _prospect_profile(prospect),
             "qualification_signals": prospect.signals or [],
             "recommended_angle": redact_sensitive(prospect.recommended_angle or ""),
+        }
+        return sanitize(context)
+
+    @classmethod
+    def for_outreach_email(cls, *, prospect, unsubscribe_line: str = "") -> dict:
+        campaign = prospect.campaign
+        profile = _settings_for(BusinessProfile, prospect.organization_id)
+        context = {
+            **cls._business(prospect.organization_id),
+            **cls._owner_voice(prospect.organization_id),
+            "owner_email": redact_sensitive(getattr(settings, "DEFAULT_FROM_EMAIL", "") or ""),
+            "owner_title": redact_sensitive(getattr(profile, "owner_name", "") or "Dueño"),
+            "campaign_vertical": redact_sensitive(campaign.vertical or campaign.name or ""),
+            "campaign_target_profile": redact_sensitive(
+                campaign.target_profile or "Sin perfil objetivo configurado."
+            ),
+            "prospect_profile": _prospect_profile(prospect),
+            "qualification_signals": prospect.signals or [],
+            "recommended_angle": redact_sensitive(prospect.recommended_angle or ""),
+            "unsubscribe_line": redact_sensitive(
+                unsubscribe_line or "Si preferis que no vuelva a escribirte, avisame por este mail."
+            ),
         }
         return sanitize(context)
 

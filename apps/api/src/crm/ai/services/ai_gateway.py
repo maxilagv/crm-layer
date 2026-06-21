@@ -484,6 +484,38 @@ class AIGateway:
         )
 
     @staticmethod
+    def draft_outreach_email(
+        *,
+        prospect_id,
+        unsubscribe_line: str = "",
+        actor=None,
+        metadata: dict | None = None,
+        http_request=None,
+    ) -> AIGatewayResult:
+        """Draft the first email opener for an approved prospect."""
+        prospect = _load_prospect(prospect_id)
+        variables = ContextBuilder.for_outreach_email(
+            prospect=prospect,
+            unsubscribe_line=unsubscribe_line,
+        )
+        metadata = {**(metadata or {}), "prospect_id": str(prospect.id)}
+        return AIGateway._execute(
+            organization_id=prospect.organization_id,
+            purpose=AIPurpose.OUTREACH_EMAIL.value,
+            variables=variables,
+            method_name="generate_structured",
+            capabilities=(ModelCapability.STRUCTURED_OUTPUTS.value,),
+            metadata=metadata,
+            references={
+                "contact_id": prospect.contact_id,
+                "conversation_id": prospect.conversation_id,
+                "lead_id": prospect.lead_id,
+            },
+            actor=actor,
+            http_request=http_request,
+        )
+
+    @staticmethod
     def draft_prospect_reply(
         *,
         prospect_id,

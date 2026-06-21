@@ -1,20 +1,29 @@
 """Thin views for the Cazador: campaigns + prospects review queue."""
 
 from django.core.cache import cache
+from django.core.signing import BadSignature
+from django.utils import timezone
 from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 
+from crm.contacts.models import Contact, ContactEmail
 from crm.core.api.pagination import StandardPagination
 from crm.core.api.responses import success_response
 from crm.core.security.drf import RequiresPermission
 from crm.core.security.permissions import PermissionCode
 from crm.organizations.selectors.organizations import resolve_current_organization
+from crm.prospecting.domain.enums import ProspectStatus
 from crm.prospecting.models import Prospect, ProspectingCampaign
+from crm.prospecting.services.email_sender import load_unsubscribe_token
+from crm.prospecting.services.replies import _suppress_contact
+from crm.prospecting.services.report_builder import ProspectingReportBuilder
 
 from .serializers import (
     CampaignCreateSerializer,
     CampaignUpdateSerializer,
     ProspectingCampaignSerializer,
+    ProspectingReportSerializer,
     ProspectSerializer,
     ProspectUpdateSerializer,
 )
@@ -151,6 +160,87 @@ class ProspectsView(APIView):
         paginator = StandardPagination()
         page = paginator.paginate_queryset(qs, request)
         return paginator.get_paginated_response(ProspectSerializer(page, many=True).data)
+
+
+class ProspectingReportView(APIView):
+    permission_classes = [RequiresPermission]
+    required_permission = PermissionCode.PROSPECTING_VIEW.value
+
+    def get(self, request):
+        organization = resolve_current_organization(request)
+        campaign_id = request.query_params.get("campaign_id") or None
+        if campaign_id:
+            _get_campaign_or_404(organization, campaign_id)
+        report = ProspectingReportBuilder.build(organization, campaign_id=campaign_id)
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(report["contacts"], request)
+        report = {**report, "contacts": page}
+        serializer = ProspectingReportSerializer(report)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class ProspectEmailUnsubscribeView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        return self._unsubscribe(request, token)
+
+    def post(self, request, token):
+        return self._unsubscribe(request, token)
+
+    @staticmethod
+    def _unsubscribe(request, token):
+        try:
+            data = load_unsubscribe_token(token)
+        except BadSignature:
+            return success_response(
+                request,
+                {"unsubscribed": False, "reason": "invalid"},
+                status=400,
+            )
+
+        prospect = Prospect.objects.filter(
+            id=data.get("prospect_id"),
+            organization_id=data.get("organization_id"),
+        ).first()
+        if prospect is None:
+            return success_response(
+                request,
+                {"unsubscribed": False, "reason": "not_found"},
+                status=404,
+            )
+        if data.get("email") and str(data["email"]).lower() != (prospect.owner_email or "").lower():
+            return success_response(
+                request,
+                {"unsubscribed": False, "reason": "invalid"},
+                status=400,
+            )
+
+        metadata = dict(prospect.metadata or {})
+        metadata["prospecting_opted_out_at"] = timezone.now().isoformat()
+        prospect.metadata = metadata
+        prospect.status = ProspectStatus.DO_NOT_CONTACT.value
+        prospect.save(update_fields=["metadata", "status", "updated_at"])
+        if prospect.contact_id:
+            contact = Contact.objects.filter(
+                organization_id=prospect.organization_id,
+                id=prospect.contact_id,
+            ).first()
+            if contact is not None:
+                _suppress_contact(contact)
+        elif prospect.owner_email:
+            linked = (
+                ContactEmail.objects.filter(
+                    organization_id=prospect.organization_id,
+                    normalized_email=prospect.owner_email.lower(),
+                )
+                .select_related("contact")
+                .first()
+            )
+            if linked is not None:
+                _suppress_contact(linked.contact)
+        return success_response(request, {"unsubscribed": True})
 
 
 class ProspectDetailView(APIView):

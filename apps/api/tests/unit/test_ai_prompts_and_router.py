@@ -25,7 +25,7 @@ def test_prompt_seed_is_idempotent() -> None:
     organization = OrganizationFactory()
     first = PromptLoader.seed_organization(organization.id)
     second = PromptLoader.seed_organization(organization.id)
-    assert len(first) == 16
+    assert len(first) == 17
     assert second == []
 
 
@@ -65,7 +65,7 @@ def test_prompt_activation_is_audited() -> None:
         AuditEvent.objects.filter(
             event_type="ai_prompt_version_activated", organization_id=organization.id
         ).count()
-        == 16
+        == 17
     )
 
 

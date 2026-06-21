@@ -69,6 +69,12 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: ListChecks,
         permission: "prospecting.view",
       },
+      {
+        label: "Reporte",
+        href: "/cazador/reports",
+        icon: BarChart3,
+        permission: "prospecting.view",
+      },
     ],
   },
   {

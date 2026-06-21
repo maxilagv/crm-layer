@@ -133,3 +133,21 @@ class ProspectSerializer(serializers.ModelSerializer):
 
 class ProspectUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=ProspectStatus.choices)
+
+
+class ProspectingReportContactSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    business_name = serializers.CharField()
+    status = serializers.CharField()
+    bucket = serializers.CharField()
+    last_touch_at = serializers.DateTimeField(allow_null=True)
+    fit_score = serializers.IntegerField(allow_null=True)
+    owner_email = serializers.CharField(allow_blank=True)
+    phone = serializers.CharField(allow_blank=True)
+
+
+class ProspectingReportSerializer(serializers.Serializer):
+    contacts = ProspectingReportContactSerializer(many=True)
+    buckets = serializers.DictField(child=serializers.IntegerField())
+    progress_pct = serializers.FloatField()
+    totals = serializers.DictField()

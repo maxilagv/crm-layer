@@ -19,7 +19,13 @@ from crm.prospecting.domain.enums import CampaignStatus, ProspectStatus
 from crm.prospecting.models import Prospect
 from crm.whatsapp.models import OutboundMessage
 
-from .outreach import ProspectOutreachService, _next_followup_slot, _org_stub
+from .outreach import (
+    ProspectOutreachService,
+    _agent_paused,
+    _next_followup_slot,
+    _org_stub,
+    _send_window_reason,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +126,8 @@ def run_due_followups(*, now=None, limit: int = _FOLLOWUP_LIMIT) -> int:
     now = now or timezone.now()
     queued_count = 0
     for prospect in _due_followup_prospects(now=now, limit=limit):
+        if _agent_paused(prospect.organization_id):
+            continue
         if not cache.add(f"prospecting:followup:{prospect.id}", 1, timeout=_FOLLOWUP_LOCK_TTL):
             continue
         result = _run_followup_for_prospect(prospect=prospect, now=now)
@@ -133,6 +141,8 @@ def _run_followup_for_prospect(*, prospect: Prospect, now) -> ConversationAction
         id=prospect.id,
         organization_id=prospect.organization_id,
     )
+    if _agent_paused(prospect.organization_id):
+        return ConversationActionResult(reason="agent_paused")
     if not _still_due_for_followup(prospect=prospect, now=now):
         return ConversationActionResult(reason="not_due")
 
@@ -235,8 +245,15 @@ def _route_draft(
         or not should_send
         or (mode == _REPLY_MODE and not prospect.campaign.auto_reply)
         or (mode == _FOLLOWUP_MODE and not prospect.campaign.auto_followup)
+        or _agent_paused(prospect.organization_id)
+        or (mode == _REPLY_MODE and bool(_send_window_reason(prospect.organization_id)))
         or safety.decision != SafetyDecision.SEND.value
     )
+    policy_reason = ""
+    if _agent_paused(prospect.organization_id):
+        policy_reason = "agent_paused"
+    elif mode == _REPLY_MODE and _send_window_reason(prospect.organization_id):
+        policy_reason = "outside_send_window"
     if should_notify:
         _notify_owner(
             organization=organization,
@@ -249,7 +266,7 @@ def _route_draft(
                 "intent": intent,
                 "next_action": next_action,
                 "objection_type": objection_type,
-                "reason": reason,
+                "reason": policy_reason or reason,
                 "safety": safety.as_dict(),
             },
             deduplication_key=notification_key,

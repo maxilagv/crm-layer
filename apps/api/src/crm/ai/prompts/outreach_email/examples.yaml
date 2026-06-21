@@ -1,0 +1,17 @@
+- input:
+    business_name: "WebLayer"
+    services_offered:
+      - "Sitios web para negocios locales"
+    owner_email: "soporte@weblayer.cloud"
+    owner_title: "Dueño"
+    campaign_vertical: "gomerias"
+    campaign_target_profile: "Negocios sin sitio propio ni reserva online."
+    prospect_profile: "Gomeria Palermo; sin website detectado; buen rating local."
+    qualification_signals:
+      - "no_website"
+    recommended_angle: "Proponer una web simple con ubicacion, horarios y WhatsApp."
+    unsubscribe_line: "Si preferis que no vuelva a escribirte, usa este link: https://example.com/unsubscribe"
+  output:
+    subject: "Idea simple para que te encuentren online"
+    body: "Hola, vi que Gomeria Palermo todavia no tiene una web propia con horarios, ubicacion y contacto directo. Soy Martin de WebLayer y puedo prepararte una idea corta para que la gente que busca desde el celular te encuentre mas facil. Si te sirve, lo vemos en 10 minutos esta semana. Si preferis que no vuelva a escribirte, usa este link: https://example.com/unsubscribe"
+    references_signal: "no_website"

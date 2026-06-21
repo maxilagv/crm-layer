@@ -136,6 +136,35 @@ def test_settings_endpoints_require_settings_manage(api_client):
     assert api_client.get("/api/v1/ai/providers/", **headers).status_code == 403
     assert api_client.get("/api/v1/ai/connection/", **headers).status_code == 403
     assert api_client.get("/api/v1/whatsapp/connection/", **headers).status_code == 403
+    assert api_client.get("/api/v1/settings/prospecting-policy/", **headers).status_code == 403
+
+
+@pytest.mark.django_db
+def test_prospecting_policy_settings_get_and_patch(api_client):
+    user, org = _member()
+    headers = _auth(api_client, user, org)
+
+    initial = api_client.get("/api/v1/settings/prospecting-policy/", **headers)
+    assert initial.status_code == 200
+    assert initial.json()["data"]["agent_paused"] is False
+    assert initial.json()["data"]["send_start_hour"] == 9
+
+    patched = api_client.patch(
+        "/api/v1/settings/prospecting-policy/",
+        {
+            "agent_paused": True,
+            "send_start_hour": 8,
+            "send_cutoff_hour": 16,
+            "org_daily_cap": 12,
+        },
+        format="json",
+        **headers,
+    )
+    assert patched.status_code == 200
+    assert patched.json()["data"]["agent_paused"] is True
+    assert patched.json()["data"]["send_start_hour"] == 8
+    assert patched.json()["data"]["send_cutoff_hour"] == 16
+    assert patched.json()["data"]["org_daily_cap"] == 12
 
 
 @pytest.mark.django_db

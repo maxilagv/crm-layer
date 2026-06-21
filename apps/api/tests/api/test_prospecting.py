@@ -1,10 +1,12 @@
 """Cazador 14.1: prospecting campaigns + prospects API (foundation)."""
 
 import pytest
+from django.utils import timezone
 
 from crm.core.security.permissions import Role
-from crm.prospecting.domain.enums import CampaignSource
+from crm.prospecting.domain.enums import CampaignSource, ProspectStatus
 from crm.prospecting.models import Prospect, ProspectingCampaign
+from crm.prospecting.services.email_sender import build_unsubscribe_url
 from tests.factories.accounts import UserFactory
 from tests.factories.organizations import MembershipFactory, OrganizationFactory
 
@@ -111,6 +113,145 @@ def test_prospects_list_filter_and_patch(api_client):
     )
     assert patched.status_code == 200
     assert patched.json()["data"]["status"] == "approved"
+
+
+@pytest.mark.django_db
+def test_prospecting_report_buckets_progress_and_masks_contacts(api_client):
+    user, org = _member()
+    headers = _auth(api_client, user, org)
+    campaign = _make_campaign(org)
+    now = timezone.now()
+    Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Respondio",
+        place_id="r1",
+        status=ProspectStatus.REPLIED.value,
+        replied_at=now,
+        touch_count=1,
+        owner_email="owner@example.com",
+        phone="+5491112345678",
+        fit_score=70,
+    )
+    Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Charla",
+        place_id="r2",
+        status=ProspectStatus.REPLIED.value,
+        replied_at=now,
+        touch_count=2,
+        fit_score=80,
+    )
+    Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Interesado",
+        place_id="r3",
+        status=ProspectStatus.INTERESTED.value,
+        fit_score=90,
+    )
+    Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Contactado",
+        place_id="r4",
+        status=ProspectStatus.CONTACTED.value,
+        touch_count=1,
+    )
+    Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Aprobado",
+        place_id="r5",
+        status=ProspectStatus.APPROVED.value,
+    )
+    Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Fallido",
+        place_id="r6",
+        status=ProspectStatus.FAILED.value,
+    )
+    other = OrganizationFactory()
+    other_campaign = _make_campaign(other)
+    Prospect.objects.create(
+        organization_id=other.id,
+        campaign=other_campaign,
+        business_name="Otro org",
+        place_id="other",
+        status=ProspectStatus.REPLIED.value,
+        replied_at=now,
+    )
+
+    response = api_client.get(
+        "/api/v1/prospecting/report/",
+        {"campaign_id": str(campaign.id)},
+        **headers,
+    )
+
+    assert response.status_code == 200
+    report = response.json()["data"]
+    assert report["buckets"] == {
+        "respondieron": 1,
+        "se_tuvo_charla": 2,
+        "sin_dialogo": 2,
+    }
+    assert report["totals"]["contactables"] == 5
+    assert report["progress_pct"] == 60.0
+    assert len(report["contacts"]) == 5
+    masked = next(row for row in report["contacts"] if row["business_name"] == "Respondio")
+    assert masked["owner_email"] == "ow***@example.com"
+    assert masked["phone"] == "***5678"
+
+
+@pytest.mark.django_db
+def test_prospecting_report_empty_campaign_returns_zeroes(api_client):
+    user, org = _member()
+    headers = _auth(api_client, user, org)
+    campaign = _make_campaign(org)
+
+    response = api_client.get(
+        "/api/v1/prospecting/report/",
+        {"campaign_id": str(campaign.id)},
+        **headers,
+    )
+
+    assert response.status_code == 200
+    report = response.json()["data"]
+    assert report["buckets"] == {
+        "respondieron": 0,
+        "se_tuvo_charla": 0,
+        "sin_dialogo": 0,
+    }
+    assert report["totals"]["contactables"] == 0
+    assert report["progress_pct"] == 0.0
+    assert report["contacts"] == []
+
+
+@pytest.mark.django_db
+def test_email_unsubscribe_endpoint_marks_prospect_do_not_contact(api_client, settings):
+    settings.PUBLIC_APP_URL = "https://crm.example.test"
+    org = OrganizationFactory()
+    campaign = _make_campaign(org)
+    prospect = Prospect.objects.create(
+        organization_id=org.id,
+        campaign=campaign,
+        business_name="Con email",
+        place_id="email-opt-out",
+        status=ProspectStatus.CONTACTED.value,
+        owner_email="owner@example.com",
+    )
+    url = build_unsubscribe_url(prospect=prospect)
+    path = url[url.index("/api/v1/") :]
+
+    response = api_client.get(path)
+
+    assert response.status_code == 200
+    assert response.json()["data"]["unsubscribed"] is True
+    prospect.refresh_from_db()
+    assert prospect.status == ProspectStatus.DO_NOT_CONTACT.value
+    assert prospect.metadata["prospecting_opted_out_at"]
 
 
 @pytest.mark.django_db

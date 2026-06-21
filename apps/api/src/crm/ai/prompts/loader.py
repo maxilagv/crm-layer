@@ -46,6 +46,7 @@ PROMPT_FOLDERS: dict[str, tuple[str, str]] = {
         AIPurpose.PROSPECT_QUALIFICATION.value,
     ),
     "outreach_opener": ("outreach_opener_v1", AIPurpose.OUTREACH_OPENER.value),
+    "outreach_email": ("outreach_email_v1", AIPurpose.OUTREACH_EMAIL.value),
     "outreach_reply": ("outreach_reply_v1", AIPurpose.OUTREACH_REPLY.value),
     "reply_intent": ("reply_intent_v1", AIPurpose.REPLY_INTENT.value),
 }

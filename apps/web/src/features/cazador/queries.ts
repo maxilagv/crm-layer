@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BadgeTone } from "@/components/ui/badge";
-import { apiGetList, apiPatch, apiPost } from "@/lib/api/client";
+import { apiGet, apiGetList, apiPatch, apiPost } from "@/lib/api/client";
 
 export type CampaignStatus = "draft" | "active" | "paused" | "completed" | "archived";
 export type ProspectStatus =
@@ -24,7 +24,7 @@ export interface ProspectingCampaign {
   query: string;
   location_hint: string;
   status: CampaignStatus;
-  channel: "whatsapp" | "sms";
+  channel: "whatsapp" | "sms" | "email";
   target_profile: string;
   min_fit_score: number;
   auto_contact: boolean;
@@ -46,6 +46,7 @@ export interface Prospect {
   category: string;
   address: string;
   phone: string;
+  owner_email: string;
   website: string;
   rating: string | null;
   reviews_count: number;
@@ -84,6 +85,7 @@ export interface CreateCampaignInput {
   target_profile?: string;
   min_fit_score?: number;
   auto_contact?: boolean;
+  channel?: "whatsapp" | "sms" | "email";
   daily_cap?: number;
 }
 
@@ -96,7 +98,45 @@ export interface UpdateCampaignInput {
   target_profile?: string;
   min_fit_score?: number;
   auto_contact?: boolean;
+  channel?: "whatsapp" | "sms" | "email";
   daily_cap?: number;
+}
+
+export interface ProspectingPolicy {
+  id: string;
+  agent_paused: boolean;
+  send_start_hour: number;
+  send_cutoff_hour: number;
+  org_daily_cap: number | null;
+  updated_at: string;
+}
+
+export interface UpdateProspectingPolicyInput {
+  agent_paused?: boolean;
+  send_start_hour?: number;
+  send_cutoff_hour?: number;
+  org_daily_cap?: number | null;
+}
+
+export interface ProspectingReportContact {
+  id: string;
+  business_name: string;
+  status: ProspectStatus;
+  bucket: "respondieron" | "se_tuvo_charla" | "sin_dialogo";
+  last_touch_at: string | null;
+  fit_score: number | null;
+  owner_email: string;
+  phone: string;
+}
+
+export interface ProspectingReport {
+  contacts: ProspectingReportContact[];
+  buckets: Record<ProspectingReportContact["bucket"], number>;
+  progress_pct: number;
+  totals: {
+    contactables: number;
+    by_status: Array<{ status: ProspectStatus; total: number }>;
+  };
 }
 
 export const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
@@ -148,7 +188,28 @@ export function fitScoreTone(score: number | null): BadgeTone {
 export const cazadorKeys = {
   campaigns: (filters: CampaignFilters) => ["cazador", "campaigns", filters] as const,
   prospects: (filters: ProspectFilters) => ["cazador", "prospects", filters] as const,
+  policy: () => ["cazador", "prospecting-policy"] as const,
+  report: (filters: { campaign_id?: string }) => ["cazador", "report", filters] as const,
 };
+
+export function useProspectingPolicy() {
+  return useQuery({
+    queryKey: cazadorKeys.policy(),
+    queryFn: () => apiGet<ProspectingPolicy>("/api/v1/settings/prospecting-policy/"),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useUpdateProspectingPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateProspectingPolicyInput) =>
+      apiPatch<ProspectingPolicy>("/api/v1/settings/prospecting-policy/", input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: cazadorKeys.policy() });
+    },
+  });
+}
 
 export function useCampaigns(filters: CampaignFilters = {}) {
   return useQuery({
@@ -211,6 +272,18 @@ export function useRunOutreach(id: string) {
       void qc.invalidateQueries({ queryKey: ["cazador", "campaigns"] });
       void qc.invalidateQueries({ queryKey: ["cazador", "prospects"] });
     },
+  });
+}
+
+export function useProspectingReport(filters: { campaign_id?: string } = {}) {
+  return useQuery({
+    queryKey: cazadorKeys.report(filters),
+    queryFn: () =>
+      apiGet<ProspectingReport>("/api/v1/prospecting/report/", {
+        campaign_id: filters.campaign_id,
+        page_size: 200,
+      }),
+    refetchInterval: 30_000,
   });
 }
 

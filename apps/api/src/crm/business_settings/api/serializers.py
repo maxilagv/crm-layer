@@ -7,6 +7,7 @@ from crm.business_settings.models import (
     AIBehaviorPolicy,
     BusinessProfile,
     NotificationPolicy,
+    ProspectingPolicy,
     SalesPolicy,
     SupportPolicy,
     WhatsAppPolicy,
@@ -177,3 +178,28 @@ class WhatsAppPolicySerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class ProspectingPolicySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProspectingPolicy
+        fields = [
+            "id",
+            "agent_paused",
+            "send_start_hour",
+            "send_cutoff_hour",
+            "org_daily_cap",
+            "metadata",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        start = attrs.get("send_start_hour", getattr(self.instance, "send_start_hour", 9))
+        cutoff = attrs.get("send_cutoff_hour", getattr(self.instance, "send_cutoff_hour", 18))
+        if start >= cutoff:
+            raise serializers.ValidationError(
+                {"send_cutoff_hour": "Must be greater than send_start_hour"}
+            )
+        return attrs

@@ -164,3 +164,27 @@ class WhatsAppPolicy(OrganizationSettingsBase):
             )
         ]
         indexes = [models.Index(fields=["organization_id", "deleted_at"])]
+
+
+class ProspectingPolicy(OrganizationSettingsBase):
+    agent_paused = models.BooleanField(default=False)
+    send_start_hour = models.PositiveSmallIntegerField(
+        default=9,
+        validators=[MinValueValidator(0), MaxValueValidator(23)],
+    )
+    send_cutoff_hour = models.PositiveSmallIntegerField(
+        default=18,
+        validators=[MinValueValidator(0), MaxValueValidator(23)],
+    )
+    org_daily_cap = models.PositiveIntegerField(null=True, blank=True)
+
+    class Meta:
+        db_table = "settings_prospecting_policy"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization_id"],
+                name="uniq_prospecting_policy_organization",
+                nulls_distinct=False,
+            )
+        ]
+        indexes = [models.Index(fields=["organization_id", "deleted_at"])]

@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from crm.ai.models import AIRun
 from crm.ai.providers.fake_provider import FakeAIProvider
+from crm.business_settings.models import ProspectingPolicy
 from crm.contacts.constants import ContactStatus
 from crm.conversations.constants import Channel, MessageDirection, MessageStatus, MessageType
 from crm.conversations.services import MessageIngestionService
@@ -171,6 +172,39 @@ def test_auto_reply_false_notifies_owner_with_draft_without_enqueueing():
 
 
 @pytest.mark.django_db
+def test_global_pause_routes_inbound_draft_to_owner_without_enqueueing():
+    org = OrganizationFactory()
+    setup_ai_organization(org)
+    campaign = _campaign(org, auto_reply=True)
+    prospect = _contacted_prospect(org, campaign)
+    ProspectingPolicy.objects.create(organization_id=org.id, agent_paused=True)
+    inbound = _inbound(org, "Mandame mas info.")
+    FakeAIProvider.script(
+        {"json": _classification(next_action="send_info", intent="interested", objection_type="")},
+        {"json": _draft("Te paso una idea concreta y lo vemos en 10 minutos.")},
+    )
+
+    result = ProspectReplyInterpreter.interpret_inbound(
+        organization=org,
+        conversation=inbound.conversation,
+        contact=inbound.contact,
+        message=inbound.message,
+    )
+
+    assert result is not None
+    assert result.owner_notified is True
+    assert result.response_queued is False
+    assert (
+        OutboundMessage.objects.filter(organization_id=org.id, prospect_id=prospect.id).count() == 1
+    )
+    assert Notification.objects.filter(
+        organization_id=org.id,
+        resource_id=prospect.id,
+        metadata__reason="agent_paused",
+    ).exists()
+
+
+@pytest.mark.django_db
 def test_opt_out_cuts_reply_generation_and_queueing():
     org = OrganizationFactory()
     setup_ai_organization(org)
@@ -293,6 +327,29 @@ def test_followup_task_selects_due_prospect_enqueues_and_reprograms():
     assert prospect.next_followup_at > timezone.now() + timedelta(days=6)
     assert (
         OutboundMessage.objects.filter(organization_id=org.id, prospect_id=prospect.id).count() == 2
+    )
+
+
+@pytest.mark.django_db
+def test_followup_task_global_pause_skips_before_ai_run():
+    org = OrganizationFactory()
+    setup_ai_organization(org)
+    campaign = _campaign(org, auto_followup=True)
+    prospect = _contacted_prospect(org, campaign)
+    ProspectingPolicy.objects.create(organization_id=org.id, agent_paused=True)
+    Prospect.objects.filter(id=prospect.id).update(
+        status=ProspectStatus.CONTACTED.value,
+        touch_count=1,
+        follow_up_count=0,
+        last_touch_at=timezone.now() - timedelta(days=4),
+        next_followup_at=timezone.now() - timedelta(hours=1),
+    )
+    before_runs = AIRun.objects.filter(organization_id=org.id).count()
+
+    assert run_followups(limit=10) == 0
+    assert AIRun.objects.filter(organization_id=org.id).count() == before_runs
+    assert (
+        OutboundMessage.objects.filter(organization_id=org.id, prospect_id=prospect.id).count() == 1
     )
 
 

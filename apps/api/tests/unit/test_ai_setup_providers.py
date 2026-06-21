@@ -43,6 +43,10 @@ def test_dual_setup_with_openai_key(settings):
     assert qual.provider.provider_type == AIProviderType.GEMINI.value
     assert qual.fallback_provider is None
 
+    email = _active(org, AIPurpose.OUTREACH_EMAIL.value)
+    assert email.provider.provider_type == AIProviderType.GEMINI.value
+    assert email.fallback_provider is None
+
     # Modalities only OpenAI covers.
     audio = _active(org, AIPurpose.AUDIO_TRANSCRIPTION.value)
     assert audio.provider.provider_type == AIProviderType.OPENAI.value
@@ -58,7 +62,7 @@ def test_dual_setup_with_openai_key(settings):
     assert emb.provider.provider_type == AIProviderType.GEMINI.value
     assert emb.supports_embeddings is True
 
-    # Exactly one active config per purpose (all 17 purposes covered).
+    # Exactly one active config per purpose.
     assert AIModelConfig.objects.filter(organization_id=org.id, is_active=True).count() == len(
         AIPurpose.values
     )

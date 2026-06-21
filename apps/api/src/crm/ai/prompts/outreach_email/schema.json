@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 3000
+    },
+    "references_signal": {
+      "type": "string"
+    }
+  },
+  "required": ["subject", "body", "references_signal"],
+  "additionalProperties": false
+}

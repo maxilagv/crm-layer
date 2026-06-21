@@ -1,7 +1,7 @@
 "use client";
 
-import { Pause, Play, Plus, Radar, Search, Send } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { Clock, Pause, Play, Plus, Radar, Search, Send } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 import { PageContainer } from "@/components/shell/page-container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { Segmented, type SegmentedOption } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +26,9 @@ import {
   useCampaigns,
   useCreateCampaign,
   useDiscoverCampaign,
+  useProspectingPolicy,
   useRunOutreach,
+  useUpdateProspectingPolicy,
   useUpdateCampaign,
 } from "@/features/cazador/queries";
 
@@ -84,6 +86,7 @@ function CampaignRow({ campaign }: { campaign: ProspectingCampaign }) {
         </p>
         <div className="flex flex-wrap gap-2 text-xs text-muted">
           <span>{campaign.vertical || "Sin vertical"}</span>
+          <span>{campaign.channel === "email" ? "Email" : "WhatsApp"}</span>
           <span>Fit min {campaign.min_fit_score}</span>
           <span>Cap {campaign.daily_cap}/dia</span>
         </div>
@@ -143,6 +146,112 @@ function Metric({ label, value }: { label: string; value: number }) {
   );
 }
 
+function ProspectingPolicyPanel() {
+  const { data: policy, isLoading } = useProspectingPolicy();
+  const updatePolicy = useUpdateProspectingPolicy();
+  const [draft, setDraft] = useState<{
+    send_start_hour: string;
+    send_cutoff_hour: string;
+    org_daily_cap: string;
+  }>({
+    send_start_hour: "9",
+    send_cutoff_hour: "18",
+    org_daily_cap: "",
+  });
+
+  const current = {
+    send_start_hour: policy?.send_start_hour ?? Number(draft.send_start_hour || 9),
+    send_cutoff_hour: policy?.send_cutoff_hour ?? Number(draft.send_cutoff_hour || 18),
+    org_daily_cap: policy?.org_daily_cap ?? null,
+  };
+
+  function saveSchedule(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    updatePolicy.mutate({
+      send_start_hour: Number(draft.send_start_hour || current.send_start_hour),
+      send_cutoff_hour: Number(draft.send_cutoff_hour || current.send_cutoff_hour),
+      org_daily_cap: draft.org_daily_cap ? Number(draft.org_daily_cap) : null,
+    });
+  }
+
+  useEffect(() => {
+    if (!policy) return;
+    setDraft({
+      send_start_hour: String(policy.send_start_hour),
+      send_cutoff_hour: String(policy.send_cutoff_hour),
+      org_daily_cap: policy.org_daily_cap === null ? "" : String(policy.org_daily_cap),
+    });
+  }, [policy]);
+
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Clock className="h-4 w-4 text-muted" />
+            <h2 className="text-sm font-semibold text-foreground">Control global</h2>
+            {policy?.agent_paused ? (
+              <Badge tone="warning">Pausado</Badge>
+            ) : (
+              <Badge tone="success">Activo</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted">
+            Horario {current.send_start_hour}:00-{current.send_cutoff_hour}:00
+            {current.org_daily_cap ? ` · Cap org ${current.org_daily_cap}/dia` : ""}
+          </p>
+        </div>
+        <form className="grid gap-3 sm:grid-cols-[110px_110px_130px_auto] sm:items-end" onSubmit={saveSchedule}>
+          <Field label="Inicio">
+            <Input
+              type="number"
+              min={0}
+              max={23}
+              value={draft.send_start_hour}
+              disabled={isLoading}
+              onChange={(e) => setDraft({ ...draft, send_start_hour: e.target.value })}
+            />
+          </Field>
+          <Field label="Corte">
+            <Input
+              type="number"
+              min={0}
+              max={23}
+              value={draft.send_cutoff_hour}
+              disabled={isLoading}
+              onChange={(e) => setDraft({ ...draft, send_cutoff_hour: e.target.value })}
+            />
+          </Field>
+          <Field label="Cap org">
+            <Input
+              type="number"
+              min={1}
+              placeholder="Sin cap"
+              value={draft.org_daily_cap}
+              disabled={isLoading}
+              onChange={(e) => setDraft({ ...draft, org_daily_cap: e.target.value })}
+            />
+          </Field>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={policy?.agent_paused ? "primary" : "secondary"}
+              leftIcon={policy?.agent_paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              loading={updatePolicy.isPending}
+              onClick={() => updatePolicy.mutate({ agent_paused: !policy?.agent_paused })}
+            >
+              {policy?.agent_paused ? "Reactivar" : "Pausar"}
+            </Button>
+            <Button type="submit" variant="secondary" loading={updatePolicy.isPending}>
+              Guardar
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function CazadorCampaignsPage() {
   const [status, setStatus] = useState("");
   const [autoContact, setAutoContact] = useState(false);
@@ -154,6 +263,7 @@ export default function CazadorCampaignsPage() {
     target_profile: "",
     min_fit_score: "60",
     daily_cap: "20",
+    channel: "whatsapp",
   });
   const { data, isLoading, isError } = useCampaigns({
     status: status || undefined,
@@ -172,6 +282,7 @@ export default function CazadorCampaignsPage() {
         min_fit_score: Number(form.min_fit_score || 60),
         daily_cap: Number(form.daily_cap || 20),
         auto_contact: autoContact,
+        channel: form.channel as "whatsapp" | "sms" | "email",
       },
       {
         onSuccess: () => {
@@ -183,6 +294,7 @@ export default function CazadorCampaignsPage() {
             target_profile: "",
             min_fit_score: "60",
             daily_cap: "20",
+            channel: "whatsapp",
           });
           setAutoContact(false);
         },
@@ -196,6 +308,9 @@ export default function CazadorCampaignsPage() {
         title="Campañas"
         description="Búsqueda, calificación y salida inicial de Cazador."
       />
+      <div className="mt-5">
+        <ProspectingPolicyPanel />
+      </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>
@@ -248,7 +363,7 @@ export default function CazadorCampaignsPage() {
                   placeholder="Sin web, pocas fotos, sin turnos online."
                 />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <Field label="Fit min.">
                   <Input
                     type="number"
@@ -268,6 +383,16 @@ export default function CazadorCampaignsPage() {
                     value={form.daily_cap}
                     onChange={(e) => setForm({ ...form, daily_cap: e.target.value })}
                   />
+                </Field>
+                <Field label="Canal">
+                  <Select
+                    value={form.channel}
+                    onChange={(e) => setForm({ ...form, channel: e.target.value })}
+                  >
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                    <option value="sms">SMS</option>
+                  </Select>
                 </Field>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-border bg-bg-subtle px-3 py-2">

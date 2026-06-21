@@ -151,6 +151,17 @@ def run_followups(self, *, limit: int = 100) -> int:
         raise self.retry(exc=exc, countdown=60) from exc
 
 
+@shared_task(name="prospecting.send_due_emails", bind=True, max_retries=3, default_retry_delay=60)
+def send_due_emails(self, *, limit: int = 100) -> int:
+    """Send prospecting email messages whose business-hour delay has elapsed."""
+    from crm.prospecting.services.email_sender import ProspectEmailSender
+
+    try:
+        return ProspectEmailSender().send_due(limit=limit)
+    except Exception as exc:  # noqa: BLE001 - retry transient provider/DB failures
+        raise self.retry(exc=exc, countdown=60) from exc
+
+
 @shared_task(name="prospecting.interpret_reply", bind=True, max_retries=3, default_retry_delay=30)
 def interpret_reply(self, *, conversation_id: str, message_id: str) -> str:
     """Classify an inbound reply for a prospect conversation."""

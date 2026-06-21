@@ -2,13 +2,12 @@
 
 Assigns each AIPurpose a role:
 - **OpenAI** (gpt-4o-mini) for quality / customer-facing / owner-voice / tool-using text
-  (sales, support, assistant, document_draft, project_brief, outreach_opener, outreach_reply) and
-  for the
-  modalities only OpenAI covers here (audio transcription, image generation).
+  (sales, support, assistant, document_draft, project_brief, outreach_opener, outreach_reply)
+  and for the modalities only OpenAI covers here (audio transcription, image generation).
 - **Gemini** (free, gemini-2.5-flash) for high-volume classification/extraction
   (lead_scoring, task_extraction, conversation_summary, risk_classification,
-  audio_ticket_extraction, memory_extraction, prospect_qualification, reply_intent) and
-  embeddings (free text-embedding-004).
+  audio_ticket_extraction, memory_extraction, prospect_qualification, outreach_email,
+  reply_intent) and embeddings (free text-embedding-004).
 
 Budget-safe: OpenAI text purposes fall back to free Gemini, so when the OpenAI balance runs
 out (``insufficient_quota`` → RateLimit → retryable) the system keeps working for free.
@@ -50,6 +49,7 @@ ROLE_MAP: dict[str, tuple[str, str]] = {
     AIPurpose.AUDIO_TICKET_EXTRACTION.value: (GEMINI, "gemini-2.5-flash"),
     AIPurpose.MEMORY_EXTRACTION.value: (GEMINI, "gemini-2.5-flash"),
     AIPurpose.PROSPECT_QUALIFICATION.value: (GEMINI, "gemini-2.5-flash"),
+    AIPurpose.OUTREACH_EMAIL.value: (GEMINI, "gemini-2.5-flash"),
     AIPurpose.REPLY_INTENT.value: (GEMINI, "gemini-2.5-flash"),
     # Embeddings -> free Gemini.
     AIPurpose.EMBEDDING.value: (GEMINI, "text-embedding-004"),

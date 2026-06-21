@@ -83,6 +83,7 @@ function ProspectRow({
         </p>
         <div className="flex flex-wrap gap-2 text-xs text-muted">
           <span>{prospect.phone || "Sin telefono"}</span>
+          {prospect.owner_email && <span>{prospect.owner_email}</span>}
           <span>{prospect.website ? "Con web" : "Sin web"}</span>
           <span>{prospect.reviews_count} reviews</span>
           <span>{prospect.photos_count} fotos</span>

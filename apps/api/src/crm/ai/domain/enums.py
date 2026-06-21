@@ -27,6 +27,7 @@ class AIPurpose(models.TextChoices):
     PROJECT_BRIEF = "project_brief", "Project brief"
     PROSPECT_QUALIFICATION = "prospect_qualification", "Prospect qualification"
     OUTREACH_OPENER = "outreach_opener", "Outreach opener"
+    OUTREACH_EMAIL = "outreach_email", "Outreach email"
     OUTREACH_REPLY = "outreach_reply", "Outreach reply"
     REPLY_INTENT = "reply_intent", "Reply intent"
 
@@ -105,6 +106,7 @@ PURPOSES_REQUIRING_SCHEMA = frozenset(
         AIPurpose.PROJECT_BRIEF,
         AIPurpose.PROSPECT_QUALIFICATION,
         AIPurpose.OUTREACH_OPENER,
+        AIPurpose.OUTREACH_EMAIL,
         AIPurpose.OUTREACH_REPLY,
         AIPurpose.REPLY_INTENT,
     }

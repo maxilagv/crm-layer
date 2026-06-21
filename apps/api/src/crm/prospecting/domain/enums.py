@@ -32,6 +32,7 @@ class ProspectStatus(models.TextChoices):
 class ProspectChannel(models.TextChoices):
     WHATSAPP = "whatsapp", "WhatsApp"
     SMS = "sms", "SMS"
+    EMAIL = "email", "Email"
 
 
 # Statuses a prospect can be in once it has been worked (for stats/filtering).

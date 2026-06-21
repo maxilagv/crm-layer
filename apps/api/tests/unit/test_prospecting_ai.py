@@ -5,6 +5,7 @@ import pytest
 from crm.ai.domain.enums import AIPurpose
 from crm.ai.providers.fake_provider import FakeAIProvider
 from crm.ai.schemas import schema_for_purpose
+from crm.ai.schemas.outreach_email import OutreachEmailSchema
 from crm.ai.schemas.outreach_opener import OutreachOpenerSchema
 from crm.ai.schemas.outreach_reply import OutreachReplySchema
 from crm.ai.schemas.prospect_qualification import ProspectQualificationSchema
@@ -55,10 +56,12 @@ def _prospect(org, campaign, **kwargs):
 def test_prospecting_schemas_registered_and_examples_valid():
     assert schema_for_purpose(AIPurpose.PROSPECT_QUALIFICATION.value) is ProspectQualificationSchema
     assert schema_for_purpose(AIPurpose.OUTREACH_OPENER.value) is OutreachOpenerSchema
+    assert schema_for_purpose(AIPurpose.OUTREACH_EMAIL.value) is OutreachEmailSchema
     assert schema_for_purpose(AIPurpose.OUTREACH_REPLY.value) is OutreachReplySchema
     assert schema_for_purpose(AIPurpose.REPLY_INTENT.value) is ReplyIntentSchema
     ProspectQualificationSchema.model_validate(ProspectQualificationSchema.example)
     OutreachOpenerSchema.model_validate(OutreachOpenerSchema.example)
+    OutreachEmailSchema.model_validate(OutreachEmailSchema.example)
     OutreachReplySchema.model_validate(OutreachReplySchema.example)
     ReplyIntentSchema.model_validate(ReplyIntentSchema.example)
 
@@ -72,6 +75,10 @@ def test_gateway_runs_cazador_structured_purposes():
 
     qualification = AIGateway.qualify_prospect(prospect_id=prospect.id)
     opener = AIGateway.draft_outreach_opener(prospect_id=prospect.id)
+    email = AIGateway.draft_outreach_email(
+        prospect_id=prospect.id,
+        unsubscribe_line="Si preferis que no vuelva a escribirte, usa este link: https://x.test",
+    )
     outreach_reply = AIGateway.draft_prospect_reply(
         prospect_id=prospect.id,
         mode="reply",
@@ -87,6 +94,10 @@ def test_gateway_runs_cazador_structured_purposes():
     assert opener.succeeded
     assert opener.purpose == AIPurpose.OUTREACH_OPENER.value
     assert opener.data["message"]
+    assert email.succeeded
+    assert email.purpose == AIPurpose.OUTREACH_EMAIL.value
+    assert email.data["subject"]
+    assert email.data["body"]
     assert outreach_reply.succeeded
     assert outreach_reply.purpose == AIPurpose.OUTREACH_REPLY.value
     assert outreach_reply.data["message"]

@@ -4,6 +4,7 @@ from crm.business_settings.api.serializers import (
     AIBehaviorPolicySerializer,
     BusinessProfileSerializer,
     NotificationPolicySerializer,
+    ProspectingPolicySerializer,
     SalesPolicySerializer,
     SupportPolicySerializer,
     WhatsAppPolicySerializer,
@@ -12,6 +13,7 @@ from crm.business_settings.models import (
     AIBehaviorPolicy,
     BusinessProfile,
     NotificationPolicy,
+    ProspectingPolicy,
     SalesPolicy,
     SupportPolicy,
     WhatsAppPolicy,
@@ -77,3 +79,8 @@ class NotificationPolicyView(SettingsDetailView):
 class WhatsAppPolicyView(SettingsDetailView):
     model = WhatsAppPolicy
     serializer_class = WhatsAppPolicySerializer
+
+
+class ProspectingPolicyView(SettingsDetailView):
+    model = ProspectingPolicy
+    serializer_class = ProspectingPolicySerializer
