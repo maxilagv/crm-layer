@@ -211,7 +211,10 @@ services:
     restart: unless-stopped
     env_file: *prod-env
     environment:
-      BACKEND_URL: http://api:8000
+      # El backend se alcanza por la URL pública (vía Caddy). El nombre interno
+      # "api" dispara un bug de undici (fetch de Node) con el DNS embebido de
+      # Docker: el DNS resuelve y el TCP conecta, pero fetch hace CONNECT_TIMEOUT.
+      BACKEND_URL: ${API_BASE_URL:?Set API_BASE_URL in .env.prod}
       ORGANIZATION_ID: ${ORGANIZATION_ID:?Set ORGANIZATION_ID in .env.prod}
       WA_BRIDGE_SHARED_SECRET: ${WA_BRIDGE_SHARED_SECRET:?Set WA_BRIDGE_SHARED_SECRET in .env.prod}
     volumes:

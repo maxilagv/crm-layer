@@ -4,10 +4,38 @@
  * Use only with a test number. This unofficial bridge is for local validation
  * until the official Meta Cloud API flow is configured.
  */
+import { existsSync, readdirSync, rmSync, statSync } from "node:fs";
+import { join } from "node:path";
 import QRCode from "qrcode";
 import pkg from "whatsapp-web.js";
 
 const { Client, LocalAuth, MessageMedia } = pkg;
+
+// Chromium deja SingletonLock/Cookie/Socket en el perfil. Si el proceso anterior
+// muere sin limpiar (un restart forzado del contenedor), el nuevo Chromium no
+// arranca: "profile appears to be in use". Borramos esos locks rancios al inicio.
+function clearChromiumLocks(dir = ".wwebjs_auth") {
+  if (!existsSync(dir)) return;
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    let st;
+    try {
+      st = statSync(full);
+    } catch {
+      continue;
+    }
+    if (st.isDirectory()) {
+      clearChromiumLocks(full);
+    } else if (name.startsWith("Singleton")) {
+      try {
+        rmSync(full, { force: true });
+        console.log(`cleared stale chromium lock: ${full}`);
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
+}
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:8000";
 const ORGANIZATION_ID = process.env.ORGANIZATION_ID;
@@ -305,4 +333,5 @@ process.on("uncaughtException", (err) => {
 });
 
 console.log("Starting WhatsApp bridge.");
+clearChromiumLocks();
 client.initialize();
