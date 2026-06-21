@@ -71,6 +71,7 @@ backups/
 !infra/backups/
 !infra/backups/**
 !apps/api/src/crm/media/
+!apps/api/src/crm/media/storage/
 *.sqlite3
 db.sqlite3
 *.dump
