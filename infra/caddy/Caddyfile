@@ -14,8 +14,8 @@
 		-Server
 	}
 
-	@django path /api/* /admin* /static/*
-	reverse_proxy @django api:8000 {
+	@backend path /api/* /admin* /static/*
+	reverse_proxy @backend api:8000 {
 		transport http {
 			dial_timeout 5s
 			response_header_timeout 60s
@@ -24,12 +24,6 @@
 		}
 	}
 
-	reverse_proxy web:3000 {
-		transport http {
-			dial_timeout 5s
-			response_header_timeout 60s
-			read_timeout 120s
-			write_timeout 120s
-		}
-	}
+	# El frontend vive en Vercel. Cualquier otra ruta redirige alla.
+	redir https://crm-layer-web.vercel.app{uri}
 }
