@@ -159,9 +159,21 @@ async function pollOutbox() {
         });
         continue;
       }
-      const chatId = `${digits}@c.us`;
       try {
-        await client.sendMessage(chatId, item.body);
+        // WhatsApp nuevo usa @lid (ids de privacidad); mandar a `${digits}@c.us` a un
+        // numero nunca contactado falla con "no lid for user". getNumberId resuelve el
+        // id real registrado (o null si el numero no esta en WhatsApp).
+        const numberId = await client.getNumberId(digits);
+        if (!numberId) {
+          console.error(`outbox send failed phone=${maskPhone(item.phone)} reason=not_on_whatsapp`);
+          await postBackend("/api/v1/whatsapp/bridge/delivery-status/", {
+            message_id: item.id,
+            status: "failed",
+            reason: "not_on_whatsapp",
+          });
+          continue;
+        }
+        await client.sendMessage(numberId._serialized, item.body);
         await postBackend("/api/v1/whatsapp/bridge/delivery-status/", {
           message_id: item.id,
           status: "sent",
