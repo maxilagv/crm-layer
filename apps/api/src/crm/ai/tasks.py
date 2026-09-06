@@ -120,12 +120,27 @@ def generate_image(*, organization_id: str, prompt: str, requested_by_run_id: st
 
 
 @shared_task(name="ai.create_embeddings", **_RETRY_KWARGS)
-def create_embeddings(*, organization_id: str, owner_type: str, owner_id: str, text: str):
+def create_embeddings(
+    *,
+    organization_id: str,
+    owner_type: str,
+    owner_id: str,
+    text: str,
+    metadata: dict | None = None,
+):
     from crm.ai.services.ai_gateway import AIGateway
 
     result = AIGateway.create_embedding(
-        organization_id=organization_id, owner_type=owner_type, owner_id=owner_id, text=text
+        organization_id=organization_id,
+        owner_type=owner_type,
+        owner_id=owner_id,
+        text=text,
+        metadata=metadata,
     )
+    if owner_type == "knowledge_chunk" and result.succeeded:
+        from crm.knowledge.services.knowledge_ingestion import KnowledgeIngestionService
+
+        KnowledgeIngestionService.mark_document_embedded_if_complete(chunk_id=owner_id)
     return str(result.run_id)
 
 

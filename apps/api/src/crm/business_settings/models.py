@@ -24,6 +24,10 @@ class BusinessProfile(OrganizationSettingsBase):
     # Owner voice (Phase 9.2): how the owner writes, so the agent sounds like them.
     owner_writing_style = models.TextField(blank=True)
     signature_phrases = models.JSONField(default=list, blank=True)
+    # Optional sales handoff contact used by prospecting when a lead shows real interest.
+    closer_name = models.CharField(max_length=255, blank=True)
+    closer_whatsapp = models.CharField(max_length=32, blank=True)
+    closer_role = models.CharField(max_length=120, blank=True)
 
     class Meta:
         db_table = "settings_business_profile"

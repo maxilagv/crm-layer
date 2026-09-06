@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "crm.conversations",
     "crm.whatsapp",
     "crm.ai",
+    "crm.knowledge",
     "crm.leads",
     "crm.sales",
     "crm.notifications",
@@ -182,6 +183,12 @@ if JWT_SIGNING_KEY:
 
 REDIS_URL = env("REDIS_URL", "redis://localhost:6379/0")
 
+AI_EMBEDDING_DIMENSIONS = int(env("AI_EMBEDDING_DIMENSIONS", "768"))
+KNOWLEDGE_CHUNK_SIZE = int(env("KNOWLEDGE_CHUNK_SIZE", "1000"))
+KNOWLEDGE_CHUNK_OVERLAP = int(env("KNOWLEDGE_CHUNK_OVERLAP", "150"))
+KNOWLEDGE_CONTEXT_TOKEN_BUDGET = int(env("KNOWLEDGE_CONTEXT_TOKEN_BUDGET", "800"))
+KNOWLEDGE_CACHE_TTL = int(env("KNOWLEDGE_CACHE_TTL", "300"))
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -254,6 +261,7 @@ CELERY_TASK_ROUTES = {
     "ai.extract_ticket_from_audio": {"queue": "transcription"},
     "ai.generate_image": {"queue": "image_generation"},
     "ai.create_embeddings": {"queue": "embeddings"},
+    "knowledge.ingest_document": {"queue": "ai_slow"},
     "ai.run_eval_suite": {"queue": "evals"},
     "ai.cleanup_old_runs": {"queue": "ai_slow"},
     "ai.recalculate_usage": {"queue": "ai_slow"},

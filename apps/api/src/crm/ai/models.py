@@ -7,8 +7,10 @@ here: providers read credentials from the environment via settings.
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from pgvector.django import HnswIndex, VectorField
 
 from crm.core.models import BaseModel
 
@@ -304,10 +306,11 @@ class AIEmbedding(BaseModel):
     owner_type = models.CharField(max_length=64)
     owner_id = models.UUIDField()
     embedding_model = models.CharField(max_length=120)
-    # Stored as a JSON list of floats for maximum compatibility. Next step
-    # (documented in README): migrate to pgvector VectorField + ivfflat index
-    # once retrieval-by-similarity lands.
-    vector = models.JSONField(default=list)
+    vector = VectorField(
+        dimensions=settings.AI_EMBEDDING_DIMENSIONS,
+        null=True,
+        blank=True,
+    )
     text_hash = models.CharField(max_length=64)
     source_text = models.TextField(blank=True)
 
@@ -329,6 +332,13 @@ class AIEmbedding(BaseModel):
             models.Index(fields=["organization_id", "deleted_at"]),
             models.Index(fields=["created_at"]),
             models.Index(fields=["organization_id", "owner_type", "owner_id"]),
+            HnswIndex(
+                name="ai_embedding_vec_hnsw",
+                fields=["vector"],
+                m=16,
+                ef_construction=64,
+                opclasses=["vector_cosine_ops"],
+            ),
         ]
 
     def __str__(self) -> str:

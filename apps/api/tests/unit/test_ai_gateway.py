@@ -1,6 +1,7 @@
 """End-to-end gateway tests (fake provider only, real DB)."""
 
 import pytest
+from django.conf import settings
 
 from crm.ai.domain.enums import AIPurpose, AIRunStatus, SafetyDecision
 from crm.ai.domain.exceptions import AIModelConfigMissing
@@ -187,7 +188,7 @@ def test_create_embedding_and_dedupe(ai_org) -> None:
         organization_id=ai_org.id, owner_type="contact", owner_id=contact.id, text="hola mundo"
     )
     assert first.succeeded
-    assert first.data["dimensions"] == 4
+    assert first.data["dimensions"] == settings.AI_EMBEDDING_DIMENSIONS
     second = AIGateway.create_embedding(
         organization_id=ai_org.id, owner_type="contact", owner_id=contact.id, text="hola mundo"
     )

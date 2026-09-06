@@ -5,6 +5,7 @@ import uuid
 from types import SimpleNamespace
 
 import pytest
+from django.conf import settings
 
 from crm.ai.domain.enums import AIPurpose
 from crm.ai.domain.exceptions import (
@@ -86,7 +87,7 @@ def test_fake_provider_transcription_and_image_and_embedding() -> None:
     assert image.image_b64
     assert image.usage.image_count == 1
     embedding = fake.create_embedding(_request())
-    assert len(embedding.embedding_vector) == 4
+    assert len(embedding.embedding_vector) == settings.AI_EMBEDDING_DIMENSIONS
 
 
 # ---------------------------------------------------------------- OpenAI

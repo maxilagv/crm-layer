@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from crm.ai.models import AIRun
 from crm.ai.providers.fake_provider import FakeAIProvider
-from crm.business_settings.models import ProspectingPolicy
+from crm.business_settings.models import BusinessProfile, ProspectingPolicy
 from crm.contacts.constants import ContactStatus
 from crm.conversations.constants import Channel, MessageDirection, MessageStatus, MessageType
 from crm.conversations.services import MessageIngestionService
@@ -169,6 +169,104 @@ def test_auto_reply_false_notifies_owner_with_draft_without_enqueueing():
         metadata__mode="reply",
     ).latest("created_at")
     assert notification.metadata["suggested_reply"].startswith("Te paso la idea")
+
+
+@pytest.mark.django_db
+def test_interested_prospect_derives_to_closer_from_business_profile_metadata_once():
+    org = OrganizationFactory()
+    setup_ai_organization(org)
+    BusinessProfile.objects.create(
+        organization_id=org.id,
+        metadata={
+            "closer": {
+                "name": "Ezequiel Lavagetto",
+                "whatsapp": "1158842888",
+                "role": "vendedor clasificado / closer",
+            }
+        },
+    )
+    campaign = _campaign(org, auto_reply=False)
+    prospect = _contacted_prospect(org, campaign)
+    inbound = _inbound(org, "Si, me interesa. Mandame info para avanzar.")
+    FakeAIProvider.script(
+        {"json": _classification(next_action="send_info", intent="interested", objection_type="")},
+        {"json": _draft("Te paso una idea concreta y lo vemos en 10 minutos.")},
+    )
+
+    result = ProspectReplyInterpreter.interpret_inbound(
+        organization=org,
+        conversation=inbound.conversation,
+        contact=inbound.contact,
+        message=inbound.message,
+    )
+
+    assert result is not None
+    assert result.intent == "interested"
+    closer_message = OutboundMessage.objects.get(
+        organization_id=org.id,
+        idempotency_key=f"prospecting:{prospect.id}:derivacion:v1",
+    )
+    assert closer_message.prospect_id is None
+    assert closer_message.contact_phone.endswith("1158842888")
+    assert "Gomeria Sur" in closer_message.body
+    assert "+5491155550000" in closer_message.body
+    assert "gomerias" in closer_message.body
+    assert "Mandame info para avanzar" in closer_message.body
+    assert Notification.objects.filter(
+        organization_id=org.id,
+        resource_type="prospecting_prospect",
+        resource_id=prospect.id,
+    ).exists()
+
+    second_inbound = _inbound(org, "Dale, llamenme cuando puedan.")
+    FakeAIProvider.script(
+        {"json": _classification(next_action="send_info", intent="interested", objection_type="")},
+        {"json": _draft("Dale, te contactamos para avanzar.")},
+    )
+    ProspectReplyInterpreter.interpret_inbound(
+        organization=org,
+        conversation=second_inbound.conversation,
+        contact=second_inbound.contact,
+        message=second_inbound.message,
+    )
+
+    assert (
+        OutboundMessage.objects.filter(
+            organization_id=org.id,
+            idempotency_key=f"prospecting:{prospect.id}:derivacion:v1",
+        ).count()
+        == 1
+    )
+
+
+@pytest.mark.django_db
+def test_interested_prospect_without_closer_keeps_owner_notification_only():
+    org = OrganizationFactory()
+    setup_ai_organization(org)
+    campaign = _campaign(org, auto_reply=False)
+    prospect = _contacted_prospect(org, campaign)
+    inbound = _inbound(org, "Si, me interesa.")
+    FakeAIProvider.script(
+        {"json": _classification(next_action="send_info", intent="interested", objection_type="")},
+        {"json": _draft("Te paso una idea concreta y lo vemos en 10 minutos.")},
+    )
+
+    result = ProspectReplyInterpreter.interpret_inbound(
+        organization=org,
+        conversation=inbound.conversation,
+        contact=inbound.contact,
+        message=inbound.message,
+    )
+
+    assert result is not None
+    assert result.owner_notified is True
+    assert not OutboundMessage.objects.filter(
+        organization_id=org.id,
+        idempotency_key=f"prospecting:{prospect.id}:derivacion:v1",
+    ).exists()
+    assert (
+        OutboundMessage.objects.filter(organization_id=org.id, prospect_id=prospect.id).count() == 1
+    )
 
 
 @pytest.mark.django_db

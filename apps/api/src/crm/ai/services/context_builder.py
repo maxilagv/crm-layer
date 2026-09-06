@@ -6,7 +6,12 @@ redact obvious sensitive sequences. Everything returned here may end up inside
 a prompt — treat it as outbound.
 """
 
+import hashlib
+import logging
+
 from django.conf import settings
+from django.core.cache import cache
+from django.db.models import Count
 from django.utils import timezone
 
 from crm.ai.domain.policies import SENSITIVE_DATA_PATTERNS
@@ -21,6 +26,7 @@ from crm.core.logging import sanitize
 
 DEFAULT_MESSAGE_LIMIT = 20
 _MAX_CHARS_PER_MESSAGE = 600
+logger = logging.getLogger(__name__)
 
 # Spanish labels for memory facts injected into prompts (Phase 9.1).
 _MEMORY_LABELS = {
@@ -144,6 +150,57 @@ class ContextBuilder:
         return "\n".join(lines) if lines else "Sin datos previos del contacto."
 
     @staticmethod
+    def _knowledge_chunks(query_text, organization_id, *, k: int = 4) -> str:
+        query = str(query_text or "")
+        budget = max(0, int(settings.KNOWLEDGE_CONTEXT_TOKEN_BUDGET))
+        cache_hash = hashlib.sha256(query.encode()).hexdigest()
+        cache_key = f"kb-context:{organization_id}:{cache_hash}:{k}:{budget}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+        try:
+            from crm.knowledge.selectors.knowledge_search import KnowledgeRetriever
+
+            results = KnowledgeRetriever.search(
+                organization_id=organization_id,
+                query_text=query,
+                k=k,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Knowledge context build failed",
+                extra={
+                    "event": "knowledge.context_failed",
+                    "organization_id": str(organization_id),
+                    "metadata": {"error": str(exc)},
+                },
+            )
+            block = "Sin conocimiento relevante."
+            cache.set(cache_key, block, timeout=settings.KNOWLEDGE_CACHE_TTL)
+            return block
+
+        lines: list[str] = []
+        used_tokens = 0
+        for result in results:
+            chunk = result.chunk
+            remaining = budget - used_tokens
+            if remaining <= 0:
+                break
+            content = redact_sensitive((chunk.content or "").strip())
+            token_estimate = max(1, int(chunk.token_estimate or len(content) // 4 or 1))
+            if token_estimate > remaining:
+                content = content[: remaining * 4].rstrip()
+                token_estimate = remaining
+            if not content:
+                continue
+            title = redact_sensitive(getattr(chunk.document, "title", "") or "Fuente")
+            lines.append(f"- {title}: {content[:1000]}")
+            used_tokens += token_estimate
+        block = "\n".join(lines) if lines else "Sin conocimiento relevante."
+        cache.set(cache_key, block, timeout=settings.KNOWLEDGE_CACHE_TTL)
+        return block
+
+    @staticmethod
     def _sales_policy(organization_id) -> dict:
         policy = _settings_for(SalesPolicy, organization_id)
         if policy is None:
@@ -171,6 +228,36 @@ class ContextBuilder:
             "support_hours": getattr(policy, "support_hours", "") or "no configurado",
             "urgent_keywords": getattr(policy, "urgent_keywords", []) or [],
         }
+
+    @staticmethod
+    def _prospecting_stats(organization_id) -> str:
+        def build() -> str:
+            from crm.prospecting.domain.enums import ProspectStatus
+            from crm.prospecting.models import Prospect
+
+            rows = (
+                Prospect.objects.filter(organization_id=organization_id)
+                .values("status")
+                .annotate(n=Count("id"))
+            )
+            by_status = {row["status"]: int(row["n"] or 0) for row in rows}
+            total = sum(by_status.values())
+            if total == 0:
+                return "Todavía no hay prospectos cargados."
+
+            def count(status) -> int:
+                return by_status.get(status.value, 0)
+
+            return (
+                f"Prospectos hoy: {total} total · "
+                f"{count(ProspectStatus.QUALIFIED)} calificados · "
+                f"{count(ProspectStatus.APPROVED)} aprobados · "
+                f"{count(ProspectStatus.CONTACTED)} contactados · "
+                f"{count(ProspectStatus.REPLIED)} respondieron · "
+                f"{count(ProspectStatus.INTERESTED)} interesados"
+            )
+
+        return cache.get_or_set(f"pstats:{organization_id}", build, timeout=60)
 
     @staticmethod
     def _message_limit(organization_id) -> int:
@@ -218,6 +305,7 @@ class ContextBuilder:
             **cls._owner_voice(organization_id),
             "lead_profile": cls._contact_profile(conversation.contact),
             "contact_memories": cls._contact_memories(conversation.contact, organization_id),
+            "knowledge_chunks": cls._knowledge_chunks(current_message.body, organization_id),
             "conversation_summary": redact_sensitive(conversation.summary or "Sin resumen previo"),
             "recent_messages": cls._recent_messages(conversation, limit),
             "current_message": redact_sensitive((current_message.body or "")[:2000]),
@@ -236,6 +324,7 @@ class ContextBuilder:
             **cls._owner_voice(organization_id),
             "client_profile": cls._contact_profile(conversation.contact),
             "contact_memories": cls._contact_memories(conversation.contact, organization_id),
+            "knowledge_chunks": cls._knowledge_chunks(current_message.body, organization_id),
             "ticket_context": ticket_context or {"detail": "Sin ticket asociado"},
             "recent_messages": cls._recent_messages(conversation, limit),
             "current_message": redact_sensitive((current_message.body or "")[:2000]),
@@ -250,6 +339,8 @@ class ContextBuilder:
         context = {
             **cls._business(organization_id),
             "owner_name": getattr(profile, "owner_name", "") or "vos",
+            "knowledge_chunks": cls._knowledge_chunks(current_message.body, organization_id),
+            "prospecting_stats": cls._prospecting_stats(organization_id),
             "conversation_summary": redact_sensitive(conversation.summary or "Sin resumen previo"),
             "recent_messages": cls._recent_messages(conversation, limit),
             "current_message": redact_sensitive((current_message.body or "")[:2000]),
@@ -284,6 +375,7 @@ class ContextBuilder:
             "default_tax_rate": str(tax_rate or "0"),
             "default_terms": default_terms or "",
             "client_block": redact_sensitive(client_block),
+            "knowledge_chunks": cls._knowledge_chunks(owner_request, organization_id),
             "today": timezone.localtime().date().isoformat(),
             "owner_request": redact_sensitive((owner_request or "")[:4000]),
         }

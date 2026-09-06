@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ from django.utils import timezone
 
 from crm.ai.services.ai_gateway import AIGateway
 from crm.audit.services import audit_event_create
+from crm.business_settings.models import BusinessProfile
 from crm.contacts.constants import ContactStatus
 from crm.core.services.outbox import create_outbox_event
 from crm.leads.domain.enums import LeadSourceType
@@ -23,6 +25,9 @@ from crm.prospecting.domain.enums import ProspectStatus
 from crm.prospecting.models import Prospect, ProspectingCampaign
 from crm.prospecting.services.conversation_engine import handle_inbound_next_step
 from crm.whatsapp.models import OutboundMessage
+from crm.whatsapp.services.outbound_queue import WhatsAppOutboundQueueService
+
+logger = logging.getLogger(__name__)
 
 OPT_OUT_KEYWORDS = (
     "no",
@@ -118,6 +123,7 @@ class ProspectReplyInterpreter:
         objection_type = str(data.get("objection_type") or "")
         status = _status_for_intent(intent)
         lead_id = None
+        should_notify_closer = status == ProspectStatus.INTERESTED.value
         locked = prospect
         with transaction.atomic():
             locked = Prospect.objects.select_for_update().get(
@@ -212,6 +218,16 @@ class ProspectReplyInterpreter:
                 intent=intent,
                 next_action=next_action,
                 objection_type=objection_type,
+                actor=actor,
+                request=request,
+            )
+
+        if should_notify_closer:
+            _notify_closer(
+                organization=organization,
+                prospect=locked,
+                inbound_text=body,
+                lead_id=lead_id,
                 actor=actor,
                 request=request,
             )
@@ -325,6 +341,92 @@ def _notify_owner(*, organization, prospect: Prospect, lead_id: str | None) -> N
         resource_id=prospect.id,
         metadata={"lead_id": lead_id or "", "campaign_id": str(prospect.campaign_id)},
         deduplication_key=f"prospecting-interested:{prospect.id}",
+    )
+
+
+def _closer_config(organization_id) -> dict[str, str] | None:
+    profile = BusinessProfile.objects.filter(organization_id=organization_id).first()
+    if profile is None:
+        return None
+    metadata = profile.metadata or {}
+    metadata_closer = metadata.get("closer") if isinstance(metadata, dict) else {}
+    if not isinstance(metadata_closer, dict):
+        metadata_closer = {}
+    whatsapp = _clean_closer_value(profile.closer_whatsapp or metadata_closer.get("whatsapp"))
+    if not whatsapp:
+        return None
+    name = _clean_closer_value(profile.closer_name or metadata_closer.get("name"))
+    role = _clean_closer_value(profile.closer_role or metadata_closer.get("role"))
+    return {
+        "name": name or "closer",
+        "whatsapp": whatsapp,
+        "role": role,
+    }
+
+
+def _clean_closer_value(value) -> str:
+    return str(value or "").strip()
+
+
+def _notify_closer(
+    *,
+    organization,
+    prospect: Prospect,
+    inbound_text: str,
+    lead_id: str | None,
+    actor=None,
+    request=None,
+) -> bool:
+    closer = _closer_config(prospect.organization_id)
+    if closer is None:
+        return False
+    body = _closer_handoff_body(
+        prospect=prospect,
+        closer_name=closer["name"],
+        inbound_text=inbound_text,
+        lead_id=lead_id,
+    )
+    try:
+        result = WhatsAppOutboundQueueService.enqueue(
+            organization=organization,
+            phone=closer["whatsapp"],
+            body=body,
+            idempotency_key=f"prospecting:{prospect.id}:derivacion:v1",
+            actor=actor,
+            request=request,
+        )
+    except Exception as exc:  # best-effort: never break the prospect reply flow
+        logger.warning(
+            "Closer handoff notification skipped",
+            extra={
+                "event": "prospecting.closer_handoff_failed",
+                "organization_id": str(prospect.organization_id),
+                "metadata": {"prospect_id": str(prospect.id), "error": str(exc)},
+            },
+        )
+        return False
+    return result.created
+
+
+def _closer_handoff_body(
+    *,
+    prospect: Prospect,
+    closer_name: str,
+    inbound_text: str,
+    lead_id: str | None,
+) -> str:
+    wants = re.sub(r"\s+", " ", inbound_text or "").strip()[:280]
+    if not wants:
+        wants = "Mostro interes real en la conversacion."
+    category = prospect.category or prospect.campaign.vertical or "sin rubro cargado"
+    phone = prospect.phone or "sin telefono cargado"
+    lead_line = f"\nLead CRM: {lead_id}" if lead_id else ""
+    return (
+        f"Hola {closer_name}, nuevo prospecto interesado para derivar.\n"
+        f"Negocio: {prospect.business_name}\n"
+        f"Telefono: {phone}\n"
+        f"Rubro: {category}\n"
+        f"Que quiere: {wants}{lead_line}"
     )
 
 

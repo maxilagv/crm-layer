@@ -16,9 +16,12 @@ Supported behaviors:
 - "blocked_reply"          -> returns a reply that SafetyGuard must block
 """
 
+import hashlib
 import time
 from decimal import Decimal
 from typing import Any
+
+from django.conf import settings
 
 from crm.ai.domain.enums import AIProviderType
 from crm.ai.domain.exceptions import (
@@ -179,9 +182,30 @@ class FakeAIProvider(BaseAIProvider):
     def create_embedding(self, request: AIRequest) -> AIResponse:
         behavior = self._behavior(request)
         self._raise_for_behavior(behavior)
-        seed = float(len(request.embedding_input or "x") % 7) / 10.0
+        if self._scripted:
+            scripted = self._scripted.pop(0)
+            return self._base_response(request, **scripted)
+        vector = request.metadata.get("fake_embedding_vector")
+        if not isinstance(vector, list):
+            vector = _deterministic_embedding(request.embedding_input or "")
         return self._base_response(
             request,
-            embedding_vector=[seed, 0.1, 0.2, 0.3],
+            embedding_vector=vector,
             usage=AIUsage(input_tokens=len((request.embedding_input or "").split())),
         )
+
+
+def _deterministic_embedding(text: str) -> list[float]:
+    """Stable, 768-dimensional fake vector with position-specific hash values."""
+    dimensions = settings.AI_EMBEDDING_DIMENSIONS
+    values: list[float] = []
+    counter = 0
+    while len(values) < dimensions:
+        digest = hashlib.sha256(f"{text}:{counter}".encode()).digest()
+        for index in range(0, len(digest), 4):
+            if len(values) >= dimensions:
+                break
+            integer = int.from_bytes(digest[index : index + 4], "big", signed=False)
+            values.append((integer / 2**32) * 2.0 - 1.0)
+        counter += 1
+    return values

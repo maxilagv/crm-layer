@@ -753,6 +753,18 @@ class AIGateway:
         )
 
     @staticmethod
+    def create_embedding_vector(
+        *, organization_id, text: str, metadata: dict | None = None
+    ) -> AIGatewayResult:
+        from .embedding_service import EmbeddingService
+
+        return EmbeddingService.create_vector(
+            organization_id=organization_id,
+            text=text,
+            metadata=metadata,
+        )
+
+    @staticmethod
     def classify_risk(
         *,
         organization_id,
